@@ -630,3 +630,18 @@ body.dj-body-host, .dj-root {
   .dj-step { break-inside: avoid; }
   .dj-footer { border-top: 1px solid #999; }
 }
+
+/* ---------- جعبه کاربر در هدر (پس از ورود) ---------- */
+.dj-userbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 4px 6px 4px 4px;
+}
+.dj-userbox-info { display: flex; flex-direction: column; line-height: 1.35; padding: 0 6px; }
+.dj-userbox-name { font-size: 12px; font-weight: 700; color: var(--ink); }
+.dj-userbox-role { font-size: 10.5px; font-weight: 600; color: var(--teal); }
+.dj-btn-logout { padding: 6px 12px; font-size: 12px; }

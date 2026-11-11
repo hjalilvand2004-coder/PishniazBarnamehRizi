@@ -384,3 +384,18 @@
   .dj2-side, .dj2-btn, .dj2-filters, .dj2-quick-grid { display: none !important; }
   .dj2-main { padding: 0; max-width: none; }
 }
+
+/* ---------- کارت کاربر و خروج در سایدبار ---------- */
+.dj2-userchip {
+  margin: 12px 14px 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dj2-userchip-name { font-size: 12.5px; font-weight: 700; color: #ffffff; }
+.dj2-userchip-role { font-size: 11px; color: #6fdcc7; font-weight: 600; }
+.dj2-btn-exit { margin-top: 8px; }

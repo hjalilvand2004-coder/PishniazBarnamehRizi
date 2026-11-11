@@ -1,5 +1,7 @@
 // اپ اصلی سند — طرح‌بندی، ناوبری، جستجو، فیلتر و وضعیت
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AuthProvider, useAuth } from "./auth.jsx";
+import Login from "./Login.jsx";
 import { useHttp } from "./http.js";
 import { Bullets, Chip, ErrorState, Skeleton, toFa } from "./ui.jsx";
 import Dashboard from "./dashboard.jsx";
@@ -145,12 +147,57 @@ function Toc({ active }) {
   );
 }
 
-export default function DocumentApp() {
+// ---------------------------------------------------------------------------
+// پوسته احراز هویت — پس از ورود، شروع سامانه روی داشبورد است
+// ---------------------------------------------------------------------------
+
+function Splash() {
+  return (
+    <div className="lg-root lg-splash" dir="rtl">
+      <div className="lg-splash-card">
+        <div className="lg-logo lg-splash-logo">۳۶۰</div>
+        <p>در حال بررسی نشست ورود…</p>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  );
+}
+
+function AuthGate() {
+  const { status } = useAuth();
+  if (status === "loading") return <Splash />;
+  if (status !== "authed") return <Login />;
+  return <DocumentApp />;
+}
+
+function UserBox({ onLogout, user }) {
+  return (
+    <div className="dj-userbox">
+      <div className="dj-userbox-info">
+        <span className="dj-userbox-name">{user?.name}</span>
+        <span className="dj-userbox-role">{user?.role_label}</span>
+      </div>
+      <button type="button" className="dj-btn dj-btn-light dj-btn-logout" onClick={onLogout} title="خروج یکپارچه (نشست مرکز احراز هم بسته می‌شود)">
+        خروج
+      </button>
+    </div>
+  );
+}
+
+export function DocumentApp() {
   const http = useHttp();
+  const { user, logout } = useAuth();
   const [doc, setDoc] = useState(null);
   const [error, setError] = useState(null);
   const [active, setActive] = useState("sec-intro");
-  const [view, setView] = useState("doc"); // "doc" | "dash"
+  const [view, setView] = useState("dash"); // پس از ورود: شروع روی داشبورد
   const [openIds, setOpenIds] = useState(() => new Set());
   const [filters, setFilters] = useState({ audience: "", capability: "", priority: "" });
   const [filtered, setFiltered] = useState(null);
@@ -294,6 +341,7 @@ export default function DocumentApp() {
               )}
             </div>
             <div className="dj-header-actions">
+              <UserBox user={user} onLogout={logout} />
               <button
                 type="button"
                 className={`dj-btn ${view === "dash" ? "dj-btn-gold" : "dj-btn-primary"}`}

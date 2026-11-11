@@ -5,6 +5,7 @@ import {
   ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { useHttp } from "./http.js";
+import { useAuth } from "./auth.jsx";
 import { toFa } from "./ui.jsx";
 import "./dashboard.css";
 
@@ -382,7 +383,7 @@ function SimulationPanel({ svc, catalog }) {
 // ---------------------------------------------------------------------------
 // نمای کلی داشبورد
 // ---------------------------------------------------------------------------
-function Overview({ go }) {
+function Overview({ go, services }) {
   const http = useHttp();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -406,9 +407,13 @@ function Overview({ go }) {
       <Kpis kpis={data.kpis} />
       {(data.charts || []).map((c, i) => <ChartBox key={c.key || i} spec={c} />)}
       <DataTable table={data.table} />
-      <div className="dj2-quick-title">دسترسی سریع به ۱۱ سرویس تحلیلی</div>
+      <div className="dj2-quick-title">
+        {services.length === 11
+          ? "دسترسی سریع به ۱۱ سرویس تحلیلی"
+          : `دسترسی سریع به ${toFa(services.length)} سرویس مجاز نقش شما`}
+      </div>
       <div className="dj2-quick-grid">
-        {SERVICES.map((s) => (
+        {services.map((s) => (
           <button type="button" className="dj2-quick" key={s.id} onClick={() => go(s.id)}>
             <span className="dj2-quick-num">{toFa(s.num)}</span>
             <span className="dj2-quick-body">
@@ -428,8 +433,13 @@ function Overview({ go }) {
 // ---------------------------------------------------------------------------
 export default function Dashboard({ onBack }) {
   const http = useHttp();
+  const { user, logout } = useAuth();
   const [catalog, setCatalog] = useState(null);
   const [active, setActive] = useState("overview");
+
+  // فیلتر سرویس‌ها بر اساس نقش کاربر (permissions از بک‌اند می‌آید)
+  const permissions = new Set(user?.permissions || []);
+  const allowedServices = SERVICES.filter((s) => permissions.has(s.id));
 
   useEffect(() => {
     Promise.all([
@@ -450,6 +460,7 @@ export default function Dashboard({ onBack }) {
   }, [http]);
 
   const svc = SERVICES.find((s) => s.id === active);
+  const svcAllowed = svc && permissions.has(svc.id);
 
   return (
     <div className="dj2-root">
@@ -461,11 +472,15 @@ export default function Dashboard({ onBack }) {
             <span className="dj2-brand-sub">داشبورد تحلیلی مدیریت آموزشی</span>
           </span>
         </button>
+        <div className="dj2-userchip">
+          <span className="dj2-userchip-name">{user?.name}</span>
+          <span className="dj2-userchip-role">{user?.role_label}</span>
+        </div>
         <nav className="dj2-nav">
           <button type="button" className={`dj2-nav-item ${active === "overview" ? "dj2-nav-active" : ""}`} onClick={() => setActive("overview")}>
             نمای کلی مدیریتی
           </button>
-          {SERVICES.map((s) => (
+          {allowedServices.map((s) => (
             <button type="button" key={s.id} className={`dj2-nav-item ${active === s.id ? "dj2-nav-active" : ""}`} onClick={() => setActive(s.id)}>
               <span className="dj2-nav-num">{toFa(s.num)}</span>
               {s.title}
@@ -474,11 +489,14 @@ export default function Dashboard({ onBack }) {
         </nav>
         <div className="dj2-side-foot">
           <button type="button" className="dj2-btn dj2-btn-ghost" onClick={onBack}>بازگشت به سند رسمی</button>
+          <button type="button" className="dj2-btn dj2-btn-ghost dj2-btn-exit" onClick={logout} title="خروج یکپارچه — نشست مرکز احراز هم بسته می‌شود">
+            خروج از سامانه
+          </button>
         </div>
       </aside>
       <main className="dj2-main">
-        {active === "overview" || !svc ? (
-          <Overview go={setActive} />
+        {active === "overview" || !svcAllowed ? (
+          <Overview go={setActive} services={allowedServices} />
         ) : svc.special === "simulation" ? (
           <SimulationPanel key={svc.id} svc={svc} catalog={catalog} />
         ) : (

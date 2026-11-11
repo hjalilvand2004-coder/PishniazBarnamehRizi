@@ -1,0 +1,355 @@
+/* صفحه ورود دانشجو۳۶۰ — طرح شیک تیره با گلس‌مورفیسم (هماهنگ با پالت سامانه) */
+
+.lg-root {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(20, 118, 106, 0.35), transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, rgba(28, 90, 150, 0.4), transparent 55%),
+    linear-gradient(160deg, #071a2c 0%, #0b2740 45%, #0a443f 100%);
+  color: #eaf3f1;
+  font-family: "Vazirmatn", "Segoe UI", Tahoma, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+
+/* ---------- تزئین پس‌زمینه ---------- */
+.lg-decor { position: absolute; inset: 0; pointer-events: none; }
+
+.lg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+}
+.lg-orb-a { width: 420px; height: 420px; top: -120px; right: -80px; background: rgba(20, 160, 133, 0.35); }
+.lg-orb-b { width: 360px; height: 360px; bottom: -110px; left: -60px; background: rgba(28, 90, 150, 0.4); }
+.lg-orb-c { width: 260px; height: 260px; top: 40%; left: 38%; background: rgba(214, 137, 16, 0.18); }
+
+.lg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
+}
+
+/* ---------- چیدمان ---------- */
+.lg-wrap {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 460px) minmax(380px, 520px);
+  gap: 40px;
+  align-items: stretch;
+  width: min(1040px, 100%);
+}
+
+/* ---------- ستون معرفی ---------- */
+.lg-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  padding: 12px 6px;
+}
+
+.lg-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 12.5px;
+  color: #d7e8e4;
+  backdrop-filter: blur(6px);
+}
+.lg-hero-badge svg { width: 15px; height: 15px; color: #6fdcc7; }
+
+.lg-hero-title {
+  margin: 4px 0 0;
+  font-size: 30px;
+  line-height: 1.55;
+  font-weight: 800;
+  background: linear-gradient(105deg, #ffffff 30%, #9fe3d4 70%, #f4c860 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lg-hero-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lg-hero-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14.5px;
+  color: #c9dbd8;
+  line-height: 1.7;
+}
+.lg-hero-num {
+  flex-shrink: 0;
+  width: 52px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 16px;
+  color: #eafff9;
+  background: linear-gradient(150deg, rgba(20, 118, 106, 0.65), rgba(28, 90, 150, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.lg-hero-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #93a8a4;
+  line-height: 1.8;
+  border-right: 2px solid rgba(214, 137, 16, 0.55);
+  padding-right: 10px;
+}
+
+/* ---------- کارت ورود ---------- */
+.lg-card {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  padding: 34px 34px 24px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 24px 70px rgba(2, 12, 20, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+}
+
+.lg-logo {
+  width: 74px;
+  height: 74px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 21px;
+  color: #fff;
+  background: linear-gradient(140deg, #0e6b63, #1c5a96 60%, #d68910 140%);
+  box-shadow: 0 10px 26px rgba(14, 107, 99, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  margin-bottom: 16px;
+}
+
+.lg-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+}
+
+.lg-subtitle {
+  margin: 8px 0 18px;
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: #b8cdc9;
+}
+
+/* ---------- پیام‌های وضعیت ---------- */
+.lg-alert {
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.8;
+  margin-bottom: 14px;
+  border: 1px solid transparent;
+}
+.lg-alert p { margin: 6px 0 0; color: inherit; }
+.lg-alert code {
+  direction: ltr;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+.lg-alert-ok { background: rgba(23, 138, 104, 0.22); border-color: rgba(63, 214, 168, 0.4); color: #c9f5e6; }
+.lg-alert-info { background: rgba(28, 90, 150, 0.25); border-color: rgba(108, 170, 230, 0.4); color: #d3e6f8; }
+.lg-alert-error { background: rgba(192, 57, 43, 0.2); border-color: rgba(230, 120, 100, 0.45); color: #f6d9d2; }
+.lg-alert-noaccess {
+  background: linear-gradient(150deg, rgba(192, 57, 43, 0.24), rgba(120, 40, 30, 0.18));
+  border-color: rgba(240, 130, 110, 0.5);
+  color: #fbe4dd;
+}
+.lg-alert-noaccess b { font-size: 14px; }
+
+/* ---------- دکمه SSO ---------- */
+.lg-sso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15.5px;
+  color: #ffffff;
+  background: linear-gradient(120deg, #0e6b63 0%, #14796c 45%, #1c5a96 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 28px rgba(14, 107, 99, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+.lg-sso-btn svg { width: 20px; height: 20px; }
+.lg-sso-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(14, 107, 99, 0.55); filter: brightness(1.06); }
+.lg-sso-btn:active { transform: translateY(0); }
+.lg-sso-busy { opacity: 0.85; pointer-events: none; }
+
+.lg-sso-note {
+  margin: 10px 0 4px;
+  font-size: 11.5px;
+  color: #9fb7b3;
+  text-align: center;
+  line-height: 1.8;
+}
+
+/* ---------- جداکننده ---------- */
+.lg-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 14px;
+  color: #8fa9a5;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.lg-divider::before,
+.lg-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+
+/* ---------- کارت‌های نقش نمایشی ---------- */
+.lg-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lg-role {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-align: right;
+  cursor: pointer;
+  font-family: inherit;
+  color: #e6f0ee;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.lg-role:hover {
+  transform: translateY(-1.5px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(126, 224, 205, 0.4);
+}
+.lg-role:focus-visible { outline: 2px solid #6fdcc7; outline-offset: 2px; }
+
+.lg-role-icon {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.lg-role-icon svg { width: 22px; height: 22px; }
+.lg-role-sysadmin { background: linear-gradient(145deg, rgba(214, 137, 16, 0.32), rgba(154, 106, 31, 0.22)); color: #ffd98a; }
+.lg-role-dept_manager { background: linear-gradient(145deg, rgba(28, 90, 150, 0.38), rgba(20, 70, 120, 0.26)); color: #9cc7ee; }
+.lg-role-edu_manager { background: linear-gradient(145deg, rgba(20, 118, 106, 0.38), rgba(12, 84, 74, 0.26)); color: #7fe3cd; }
+
+.lg-role-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lg-role-name { font-weight: 700; font-size: 14.5px; color: #ffffff; }
+.lg-role-desc {
+  font-size: 11.5px;
+  color: #a9bfbc;
+  line-height: 1.7;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.lg-role-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #cfe0dd;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.lg-demo-note {
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: #92a8a4;
+  line-height: 1.8;
+  text-align: center;
+}
+.lg-demo-off { color: #b5a67e; }
+
+.lg-foot {
+  margin-top: auto;
+  padding-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #829a97;
+}
+.lg-foot-sep { opacity: 0.5; }
+
+/* ---------- واکنش‌گرایی ---------- */
+@media (max-width: 960px) {
+  .lg-wrap { grid-template-columns: 1fr; gap: 24px; width: min(460px, 100%); }
+  .lg-hero { order: 2; padding-bottom: 10px; }
+  .lg-hero-title { font-size: 22px; }
+  .lg-hero-list { gap: 10px; }
+}
+@media (max-width: 480px) {
+  .lg-card { padding: 26px 20px 18px; }
+  .lg-role-count { display: none; }
+}
+
+/* ---------- اسپلش بررسی نشست ---------- */
+.lg-splash { justify-content: center; }
+.lg-splash-card { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.lg-splash-card p { color: #b8cdc9; font-size: 13.5px; margin: 0; }
+.lg-splash-logo { margin-bottom: 0; animation: lg-pulse 1.6s ease-in-out infinite; }
+@keyframes lg-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.92; }
+  50% { transform: scale(1.06); opacity: 1; }
+}

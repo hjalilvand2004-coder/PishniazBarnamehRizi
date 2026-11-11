@@ -2,3 +2,5 @@
 fastapi>=0.110,<1.0
 uvicorn>=0.27,<1.0
 sqlalchemy>=2.0,<3.0
+# احراز هویت یکپارچه SSO — اعتبارسنجی JWT با RS256 و JWKS
+pyjwt[crypto]>=2.8,<3.0

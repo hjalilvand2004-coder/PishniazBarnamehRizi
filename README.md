@@ -3,6 +3,11 @@
 نسخه کامل با **بک‌اند FastAPI**، **فرانت‌اند React** و **پایگاه داده SQLAlchemy**
 (پیش‌فرض SQLite بدون نیاز به نصب سرویس جانبی؛ قابل اتصال به PostgreSQL/MySQL).
 
+**ورود یکپارچه سازمانی (SSO):** احراز هویت از طریق مرکز هویت دانشجویار۳۶۰ با استاندارد
+OpenID Connect (Authorization Code + PKCE S256) — بدون رمز عبور در خود سامانه؛ به‌همراه
+سه نقش مدیریتی (ادمین سیستم، مدیرگروه، مدیرآموزش) با کنترل دسترسی نقش‌محور و شروع
+سامانه روی داشبورد پس از ورود. جزئیات: [docs/SSO-Integration-FA.md](docs/SSO-Integration-FA.md)
+
 این مخزن دو بخش اصلی دارد که از یک مبدأ سرو می‌شوند:
 
 1. **داشبورد تحلیلی** — موتور اجرایی ۱۱ سرویس مدیریت آموزشی که واقعاً روی پایگاه داده محاسبه می‌کند (KPI، نمودار، جدول، محدودیت‌ها و مرز تصمیم‌گیری).
@@ -38,8 +43,9 @@
 frontend (React + Vite + Recharts, RTL فارسی)
         │  build → backend/static
         ▼
-FastAPI  ── /api/document, /api/services, /api/export/markdown   (سند رسمی)
-         ── /api/analytics/*      (۱۱ موتور تحلیلی)
+FastAPI  ── /auth/sso/*, /auth/logout, /api/auth/*   (ورود یکپارچه SSO + نقش‌ها)
+         ── /api/document, /api/services, /api/export/markdown   (سند رسمی)
+         ── /api/analytics/*      (۱۱ موتور تحلیلی — محافظت نقش‌محور)
          ── /api/dashboard/*      (نمای کلی مدیریتی)
          ── /api/catalog/*        (کاتالوگ داده برای فیلترها)
         ▼
@@ -108,28 +114,53 @@ export DANESHJO360_DATABASE_URL="mysql+pymysql://user:pass@host:3306/daneshjo360
 ├── backend/
 │   ├── requirements.txt
 │   ├── app/
-│   │   ├── main.py            # FastAPI + lifespan (ساخت DB خودکار)
+│   │   ├── main.py            # FastAPI + lifespan (ساخت DB خودکار + حساب‌های نمایشی)
 │   │   ├── db.py              # موتور SQLAlchemy + تنظیم DATABASE URL
 │   │   ├── models.py          # ۷ مدل ORM
 │   │   ├── seed.py            # داده نمونه سینتتیک تکرارپذیر
-│   │   ├── analytics/         # موتور ۱۱ سرویس + router
+│   │   ├── auth/              # SSO (PKCE/JWKS/نشست) + نقش‌ها + RBAC
+│   │   ├── analytics/         # موتور ۱۱ سرویس + router (محافظت نقش‌محور)
 │   │   └── data/              # تک‌منبع حقیقت محتوای سند رسمی
 │   └── static/                # خروجی build فرانت (committed؛ اجرا بدون Node)
 ├── frontend/
 │   ├── package.json           # React 18 + Recharts + Vite
 │   ├── vite.config.js         # proxy dev + outDir به backend/static
-│   └── src/app/               # داشبورد تحلیلی + سند رسمی (RTL)
+│   └── src/app/               # صفحه ورود + داشبورد تحلیلی + سند رسمی (RTL)
 ├── docs/
-│   └── sanad-rasmi.md         # سند رسمی ۱۰‌بخشی (Markdown)
+│   ├── sanad-rasmi.md         # سند رسمی ۱۰‌بخشی (Markdown)
+│   └── SSO-Integration-FA.md  # مستند ورود یکپارچه + فرم بازگشت اطلاعات
 └── scripts/
     ├── start.sh
     └── start.bat
 ```
 
-## ۶) خلاصه API
+## ۶) نقش‌ها و صفحه ورود
+
+صفحه ورود (`/login`) با طراحی تیره و RTL فارسی، ورود یکپارچه سازمانی (SSO) را ارائه می‌کند؛
+برای ارزیابی، سه حساب نمایشی (بدون رمز) هم در دسترس است که با `DANESHJO360_DEMO_LOGIN=0`
+خاموش می‌شود. پس از ورود، سامانه روی **داشبورد** شروع می‌شود و منوی سرویس‌ها بر اساس نقش:
+
+| نقش | دسترسی سرویس‌های تحلیلی |
+|---|---|
+| ادمین سیستم (sysadmin) | همه ۱۱ سرویس |
+| مدیرگروه (dept_manager) | تقاضا، ظرفیت، توزیع، عملکرد اساتید، توصیه استاد |
+| مدیرآموزش (edu_manager) | تقاضا، ظرفیت، توزیع، دانشکده‌ها، مردودی، هزینه، نسبت، بهره‌وری |
+
+نقش کاربران SSO از توکن (`daneshjo.sysadmin` و…) خوانده می‌شود و API هر سرویس را نیز
+سمت سرور محافظت می‌کند؛ فهرست مجاز هر کاربر از `GET /api/auth/me` دریافت می‌شود.
+
+## ۷) خلاصه API
 
 | مسیر | توضیح |
 |------|--------|
+| `GET /auth/sso/login` | شروع جریان ورود یکپارچه (PKCE S256) |
+| `GET /auth/sso/callback` | بازگشت از مرکز احراز هویت |
+| `GET /auth/logout` | خروج یکپارچه (بستن نشست مرکز احراز) |
+| `POST /auth/sso/backchannel` | خروج متمرکز SSO (پاسخ 204) |
+| `GET /api/auth/config` | پیکربندی عمومی صفحه ورود |
+| `GET /api/auth/me` | کاربر جاری + نقش + سرویس‌های مجاز |
+| `POST /api/auth/demo-login` | ورود نمایشی سه نقش (قابل خاموش کردن) |
+| `POST /api/auth/refresh` | نوسازی توکن با چرخش تک‌مصرف |
 | `GET /api/dashboard/overview` | نمای کلی مدیریتی |
 | `GET /api/analytics/demand-analysis` | سرویس ۱ |
 | `GET /api/analytics/capacity-forecast` | سرویس ۲ |
@@ -146,13 +177,13 @@ export DANESHJO360_DATABASE_URL="mysql+pymysql://user:pass@host:3306/daneshjo360
 | `GET /api/export/markdown` | خروجی Markdown سند |
 | `GET /api/catalog/*` | کاتالوگ دانشکده/رشته/درس/استاد/ترم |
 
-## ۷) مرز کاربرد و ملاحظات حاکمیتی
+## ۸) مرز کاربرد و ملاحظات حاکمیتی
 
 * این سامانه **پشتیبان تصمیم** است و جایگزین صلاحیت حرفه‌ای، مقررات سازمانی و اختیارات قانونی شوراها و مسئولان دانشگاه نیست.
 * این سامانه برای **مدیران دانشگاه** است و با «دستیار آموزشی دانشجویی» (راهنمای درس‌گزینی فردی) تفاوت ماهوی دارد؛ جدول تفکیک در سند رسمی (بخش ۷) آمده است.
 * داده‌های فعلی **سینتتیک و نمونه** هستند؛ در استقرار واقعی باید منبع داده رسمی سازمان متصل شود.
 * تحلیل عملکرد اساتید برای خودارزیابی و پشتیبانی توسعه حرفه‌ای طراحی شده است، نه رتبه‌بندی تنبیهی.
 
-## ۸) مجوز
+## ۹) مجوز
 
 MIT — متن کامل در [LICENSE](LICENSE).

@@ -6,6 +6,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from ..auth.deps import require_authenticated, require_service
 from ..db import get_db
 from ..models import Course, Department, Instructor, Major, Offering, Student, Term
 from . import (
@@ -25,13 +26,14 @@ router = APIRouter(prefix="/api", tags=["analytics"])
 # ---------------------------------------------------------------------------
 
 @router.get("/catalog/departments")
-def catalog_departments(db: Session = Depends(get_db)):
+def catalog_departments(db: Session = Depends(get_db), _user=Depends(require_authenticated)):
     items = db.query(Department).order_by(Department.id).all()
     return [{"id": d.id, "code": d.code, "name": d.name} for d in items]
 
 
 @router.get("/catalog/majors")
-def catalog_majors(db: Session = Depends(get_db), department_id: int | None = None):
+def catalog_majors(db: Session = Depends(get_db), department_id: int | None = None,
+                   _user=Depends(require_authenticated)):
     q = db.query(Major)
     if department_id:
         q = q.filter(Major.department_id == int(department_id))
@@ -46,7 +48,7 @@ def catalog_majors(db: Session = Depends(get_db), department_id: int | None = No
 
 @router.get("/catalog/courses")
 def catalog_courses(db: Session = Depends(get_db), department_id: int | None = None,
-                    major_id: int | None = None):
+                    major_id: int | None = None, _user=Depends(require_authenticated)):
     q = db.query(Course).filter(Course.active.is_(True))
     if department_id:
         q = q.filter(Course.department_id == int(department_id))
@@ -64,7 +66,8 @@ def catalog_courses(db: Session = Depends(get_db), department_id: int | None = N
 
 
 @router.get("/catalog/instructors")
-def catalog_instructors(db: Session = Depends(get_db), department_id: int | None = None):
+def catalog_instructors(db: Session = Depends(get_db), department_id: int | None = None,
+                        _user=Depends(require_authenticated)):
     q = db.query(Instructor)
     if department_id:
         q = q.filter(Instructor.department_id == int(department_id))
@@ -78,7 +81,7 @@ def catalog_instructors(db: Session = Depends(get_db), department_id: int | None
 
 
 @router.get("/catalog/terms")
-def catalog_terms(db: Session = Depends(get_db)):
+def catalog_terms(db: Session = Depends(get_db), _user=Depends(require_authenticated)):
     items = sorted(db.query(Term).all(), key=lambda t: t.order_index)
     return [{"id": t.id, "code": t.code, "label": t.label, "order_index": t.order_index} for t in items]
 
@@ -88,7 +91,7 @@ def catalog_terms(db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 @router.get("/dashboard/overview")
-def dashboard_overview(db: Session = Depends(get_db)):
+def dashboard_overview(db: Session = Depends(get_db), _user=Depends(require_authenticated)):
     terms = sorted(db.query(Term).all(), key=lambda t: t.order_index)
     latest = terms[-1] if terms else None
     courses = {c.id: c for c in db.query(Course).all()}
@@ -224,13 +227,15 @@ def dashboard_overview(db: Session = Depends(get_db)):
 
 @router.get("/analytics/demand-analysis")
 def api_demand_analysis(db: Session = Depends(get_db),
-                        department_id: int | None = None, course_id: int | None = None):
+                        department_id: int | None = None, course_id: int | None = None,
+                        _user=Depends(require_service("demand-analysis"))):
     return demand.demand_analysis(db, department_id, course_id)
 
 
 @router.get("/analytics/capacity-forecast")
 def api_capacity_forecast(db: Session = Depends(get_db),
-                          department_id: int | None = None, course_id: int | None = None):
+                          department_id: int | None = None, course_id: int | None = None,
+                          _user=Depends(require_service("capacity-forecast"))):
     return capacity.capacity_forecast(db, department_id, course_id)
 
 
@@ -238,7 +243,8 @@ def api_capacity_forecast(db: Session = Depends(get_db),
 def api_student_distribution(db: Session = Depends(get_db),
                              group_by: str = Query(default="major"),
                              department_id: int | None = None,
-                             status: str = Query(default="active")):
+                             status: str = Query(default="active"),
+                             _user=Depends(require_service("student-distribution"))):
     return distribution.student_distribution(db, group_by, department_id, status)
 
 
@@ -246,12 +252,14 @@ def api_student_distribution(db: Session = Depends(get_db),
 def api_instructor_performance(db: Session = Depends(get_db),
                                department_id: int | None = None,
                                instructor_id: int | None = None,
-                               min_sample: int | None = None):
+                               min_sample: int | None = None,
+                               _user=Depends(require_service("instructor-performance"))):
     return instructor_perf.instructor_performance(db, department_id, instructor_id, min_sample)
 
 
 @router.get("/analytics/instructor-recommendation")
-def api_instructor_recommendation(db: Session = Depends(get_db), course_id: int = Query(...)):
+def api_instructor_recommendation(db: Session = Depends(get_db), course_id: int = Query(...),
+                                  _user=Depends(require_service("instructor-recommendation"))):
     result = recommend.instructor_recommendation(db, course_id)
     if result is None:
         raise HTTPException(status_code=404, detail="درس مورد نظر یافت نشد.")
@@ -259,14 +267,15 @@ def api_instructor_recommendation(db: Session = Depends(get_db), course_id: int 
 
 
 @router.get("/analytics/department-performance")
-def api_department_performance(db: Session = Depends(get_db)):
+def api_department_performance(db: Session = Depends(get_db),
+                               _user=Depends(require_service("department-performance"))):
     return dept_perf.department_performance(db)
 
 
 @router.get("/analytics/fail-rate")
 def api_fail_rate(db: Session = Depends(get_db), department_id: int | None = None,
                   course_id: int | None = None, term_id: int | None = None,
-                  threshold: float = 20):
+                  threshold: float = 20, _user=Depends(require_service("fail-rate"))):
     return fail_rate.fail_rate(db, department_id, course_id, term_id, threshold)
 
 
@@ -274,23 +283,27 @@ def api_fail_rate(db: Session = Depends(get_db), department_id: int | None = Non
 def api_course_cost(db: Session = Depends(get_db), department_id: int | None = None,
                     course_id: int | None = None, room_hourly: int | None = None,
                     weeks: int | None = None, overhead: int | None = None,
-                    tuition_per_credit: int | None = None):
+                    tuition_per_credit: int | None = None,
+                    _user=Depends(require_service("course-cost"))):
     return cost.course_cost(db, department_id, course_id, room_hourly, weeks, overhead, tuition_per_credit)
 
 
 @router.get("/analytics/ratio-optimization")
 def api_ratio_optimization(db: Session = Depends(get_db),
-                           target: float = DEFAULT_TARGET_RATIO):
+                           target: float = DEFAULT_TARGET_RATIO,
+                           _user=Depends(require_service("ratio-optimization"))):
     return ratio.ratio_optimization(db, target)
 
 
 @router.get("/analytics/teaching-efficiency")
-def api_teaching_efficiency(db: Session = Depends(get_db)):
+def api_teaching_efficiency(db: Session = Depends(get_db),
+                            _user=Depends(require_service("teaching-efficiency"))):
     return efficiency.teaching_efficiency(db)
 
 
 @router.post("/analytics/major-simulation")
-def api_major_simulation(payload: SimInput, db: Session = Depends(get_db)):
+def api_major_simulation(payload: SimInput, db: Session = Depends(get_db),
+                         _user=Depends(require_service("major-simulation"))):
     result = simulation.major_simulation(db, payload)
     if result is None:
         raise HTTPException(status_code=404, detail="رشته مورد نظر یافت نشد.")

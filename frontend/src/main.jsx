@@ -1,8 +1,8 @@
-// ورودی سامانه — React SPA سرو شده از FastAPI (هم‌مبدأ)
+// ورودی سامانه — React SPA سرو شده از FastAPI (هم‌مبدأ) با پوسته احراز هویت
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { HttpProvider, makeHttpClient } from "./app/http.js";
-import DocumentApp from "./app/App.jsx";
+import App from "./app/App.jsx";
 import "./app/document.css";
 
 const http = makeHttpClient();
@@ -10,7 +10,7 @@ const http = makeHttpClient();
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <HttpProvider value={http}>
-      <DocumentApp />
+      <App />
     </HttpProvider>
   </React.StrictMode>
 );

@@ -14,13 +14,16 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from .analytics.router import router as analytics_router
-from .db import init_db
+from .auth.deps import require_authenticated
+from .auth.router import router as auth_router
+from .auth.sessions import ensure_demo_users
+from .db import SessionLocal, init_db
 from .data.document import (
     BOUNDARY,
     CAPABILITY_TYPES,
@@ -39,7 +42,7 @@ from .data.services import SERVICES, get_service, get_services
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 STATIC_DIR = BASE_DIR / "static"
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 
 
 @asynccontextmanager
@@ -48,6 +51,12 @@ async def lifespan(_app: FastAPI):
     seeded = init_db()
     if seeded:
         print("دانشجو۳۶۰: پایگاه داده ایجاد و داده نمونه بارگذاری شد.")
+    # حساب‌های نمایشی سه نقش (ادمین سیستم، مدیرگروه، مدیرآموزش)
+    db = SessionLocal()
+    try:
+        ensure_demo_users(db)
+    finally:
+        db.close()
     yield
 
 
@@ -60,6 +69,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+app.include_router(auth_router)
 app.include_router(analytics_router)
 
 app.add_middleware(
@@ -121,13 +131,13 @@ def health():
 
 
 @app.get("/api/meta")
-def meta():
+def meta(user: object = Depends(require_authenticated)):
     doc = build_document()
     return doc["meta"]
 
 
 @app.get("/api/document")
-def document():
+def document(user: object = Depends(require_authenticated)):
     """سند کامل معرفی خدمات؛ منبع اصلی رندر فرانت‌اند."""
     return build_document()
 
@@ -138,6 +148,7 @@ def services(
     capability: Optional[str] = Query(default=None, description="فیلتر قابلیت هوشمند"),
     priority: Optional[int] = Query(default=None, ge=1, le=3, description="فیلتر اولویت"),
     q: Optional[str] = Query(default=None, description="جستجوی متنی در عنوان و توضیحات"),
+    user: object = Depends(require_authenticated),
 ):
     result = list(SERVICES)
     if audience:
@@ -156,7 +167,7 @@ def services(
 
 
 @app.get("/api/services/{service_id}")
-def service_detail(service_id: str):
+def service_detail(service_id: str, user: object = Depends(require_authenticated)):
     s = get_service(service_id)
     if s is None:
         raise HTTPException(status_code=404, detail="سرویس مورد نظر یافت نشد.")
@@ -164,7 +175,8 @@ def service_detail(service_id: str):
 
 
 @app.get("/api/search")
-def search(q: str = Query(min_length=2, description="عبارت جستجو")):
+def search(q: str = Query(min_length=2, description="عبارت جستجو"),
+           user: object = Depends(require_authenticated)):
     """جستجو در سرویس‌ها و بخش‌های سند."""
     needle = q.strip()
     if not needle:
@@ -224,7 +236,7 @@ def md_escape_table(text: str) -> str:
 
 
 @app.get("/api/export/markdown", response_class=PlainTextResponse)
-def export_markdown():
+def export_markdown(user: object = Depends(require_authenticated)):
     lines = []
     add = lines.append
 
@@ -399,6 +411,11 @@ def export_markdown():
 # ---------------------------------------------------------------------------
 
 if STATIC_DIR.exists() and (STATIC_DIR / "index.html").exists():
+    @app.get("/login", include_in_schema=False)
+    def login_page():
+        """صفحه ورود — همان SPA با مسیر مخصوص ورود (برای بازگشت از SSO)"""
+        return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-store"})
+
     app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="spa")
 
     @app.get("/favicon.ico", include_in_schema=False)
