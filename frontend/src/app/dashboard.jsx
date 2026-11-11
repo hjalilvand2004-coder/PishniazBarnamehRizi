@@ -280,15 +280,7 @@ function SimulationPanel({ svc, catalog }) {
         if (!form.major_id) throw new Error("انتخاب رشته برای حذف الزامی است.");
         body.major_id = Number(form.major_id);
       }
-      const res = await fetch("/api/analytics/major-simulation", {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.detail || `پاسخ ناموفق از سرور (کد ${res.status})`);
-      }
-      setResult(await res.json());
+      setResult(await http.post("/api/analytics/major-simulation", body));
     } catch (err) {
       setError(err.message);
       setResult(null);
