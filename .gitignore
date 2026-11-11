@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# پایگاه داده — در نخستین اجرا خودکار ساخته می‌شود
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+npm-debug.log*
+
+# سیستم
+*.log
+.DS_Store
+Thumbs.db
