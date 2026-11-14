@@ -5,6 +5,7 @@ import Login from "./Login.jsx";
 import { useHttp } from "./http.js";
 import { Bullets, Chip, ErrorState, Skeleton, toFa } from "./ui.jsx";
 import Dashboard from "./dashboard.jsx";
+import IntegrationView from "./integration.jsx";
 import {
   BoundarySection,
   CapabilitiesSection,
@@ -336,6 +337,8 @@ export function DocumentApp() {
                   <Chip tone="gold">{toFa(meta.counts.capability_types)} نوع قابلیت</Chip>
                   <Chip tone="moss">{toFa(meta.counts.phases)} مرحله اجرا</Chip>
                 </>
+              ) : view === "sync" ? (
+                <Chip tone="gold">یکپارچگی برخط با برنامه‌یار۳۶۰</Chip>
               ) : (
                 <Chip tone="teal">داشبورد تحلیلی روی پایگاه داده</Chip>
               )}
@@ -349,6 +352,14 @@ export function DocumentApp() {
                 title="موتور ۱۱ سرویس تحلیلی روی پایگاه داده واقعی"
               >
                 {view === "dash" ? "بازگشت به سند رسمی" : "داشبورد تحلیلی"}
+              </button>
+              <button
+                type="button"
+                className={`dj-btn ${view === "sync" ? "dj-btn-gold" : "dj-btn-light"}`}
+                onClick={() => setView(view === "sync" ? "dash" : "sync")}
+                title="یکپارچگی برخط با برنامه‌یار۳۶۰ — همگام‌سازی دادهٔ برنامه‌ریزی و ارسال برنامه‌ریزی اولیه"
+              >
+                {view === "sync" ? "بازگشت از یکپارچگی" : "یکپارچگی با برنامه‌یار"}
               </button>
               {view === "doc" ? (
                 <>
@@ -372,6 +383,8 @@ export function DocumentApp() {
 
       {view === "dash" ? (
         <Dashboard onBack={() => setView("doc")} />
+      ) : view === "sync" ? (
+        <IntegrationView onBack={() => setView("dash")} />
       ) : (
         <div className="dj-body">
           <aside className="dj-sidebar">

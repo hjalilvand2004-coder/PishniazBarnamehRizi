@@ -24,6 +24,7 @@ from .auth.deps import require_authenticated
 from .auth.router import router as auth_router
 from .auth.sessions import ensure_demo_users
 from .db import SessionLocal, init_db
+from .integration.router import router as integration_router
 from .data.document import (
     BOUNDARY,
     CAPABILITY_TYPES,
@@ -42,7 +43,7 @@ from .data.services import SERVICES, get_service, get_services
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 STATIC_DIR = BASE_DIR / "static"
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 
 
 @asynccontextmanager
@@ -71,6 +72,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(analytics_router)
+app.include_router(integration_router)
 
 app.add_middleware(
     CORSMiddleware,
