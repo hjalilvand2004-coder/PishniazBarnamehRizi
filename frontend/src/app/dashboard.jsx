@@ -8,6 +8,8 @@ import { useHttp } from "./http.js";
 import { useAuth } from "./auth.jsx";
 import { toFa } from "./ui.jsx";
 import DataSourcePanel from "./integration.jsx";
+import QualityPanel from "./quality.jsx";
+import SettingsPanel from "./settings.jsx";
 import "./dashboard.css";
 
 const PALETTE = ["#0e6b63", "#1c5a96", "#d68910", "#c0392b", "#7d3c98", "#148f77", "#b9770e", "#2874a6", "#8e44ad", "#117864", "#5d6d7e"];
@@ -507,6 +509,16 @@ export default function Dashboard({ onBack }) {
             <span className="dj2-nav-num">⇄</span>
             منبع دادهٔ برنامه‌یار۳۶۰
           </button>
+          <button type="button" className={`dj2-nav-item ${active === "quality" ? "dj2-nav-active" : ""}`} onClick={() => setActive("quality")} title="سلامت دادهٔ همگام‌شدهٔ برنامه‌یار۳۶۰ و دیتای مبنا">
+            <span className="dj2-nav-num">✓</span>
+            کیفیت داده
+          </button>
+          {user?.role === "sysadmin" ? (
+            <button type="button" className={`dj2-nav-item ${active === "settings" ? "dj2-nav-active" : ""}`} onClick={() => setActive("settings")} title="ورود یکپارچه (SSO) و اتصال به برنامه‌یار۳۶۰ — فقط ادمین سیستم">
+              <span className="dj2-nav-num">⚙</span>
+              تنظیمات سامانه
+            </button>
+          ) : null}
         </nav>
         <div className="dj2-side-foot">
           <button type="button" className="dj2-btn dj2-btn-ghost" onClick={onBack}>بازگشت به سند رسمی</button>
@@ -518,6 +530,10 @@ export default function Dashboard({ onBack }) {
       <main className="dj2-main">
         {active === "datasource" ? (
           <DataSourcePanel />
+        ) : active === "quality" ? (
+          <QualityPanel />
+        ) : active === "settings" ? (
+          <SettingsPanel />
         ) : active === "overview" || !svcAllowed ? (
           <Overview go={setActive} services={allowedServices} />
         ) : svc.special === "simulation" ? (

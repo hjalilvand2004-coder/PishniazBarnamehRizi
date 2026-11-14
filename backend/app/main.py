@@ -43,7 +43,7 @@ from .data.services import SERVICES, get_service, get_services
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 STATIC_DIR = BASE_DIR / "static"
 
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.4.0"
 
 
 @asynccontextmanager
@@ -56,6 +56,10 @@ async def lifespan(_app: FastAPI):
     db = SessionLocal()
     try:
         ensure_demo_users(db)
+        # اعمال تنظیمات ذخیره‌شدهٔ زمان‌اجرا (SSO + آدرس برنامه‌یار۳۶۰)
+        from .settings import apply_saved_settings
+
+        apply_saved_settings(db)
     finally:
         db.close()
     yield
@@ -73,6 +77,9 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(analytics_router)
 app.include_router(integration_router)
+from .settings import router as settings_router  # noqa: E402 — پس از init_db ایمپورت می‌شود
+
+app.include_router(settings_router)
 
 app.add_middleware(
     CORSMiddleware,

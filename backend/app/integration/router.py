@@ -96,6 +96,14 @@ def run_rebase(db: Session = Depends(get_db), user=Depends(require_authenticated
     return rebase_from_synced(db)
 
 
+@router.get("/quality")
+def data_quality(db: Session = Depends(get_db), user=Depends(require_authenticated)):
+    """گزارش کیفیت داده — چک‌های مشخص، امتیاز دسته‌بندی‌شده و توصیه‌های عملی؛ برای همهٔ نقش‌ها"""
+    from . import quality
+
+    return quality.build_quality_report(db)
+
+
 @router.get("/term-courses")
 def term_courses(
     db: Session = Depends(get_db),

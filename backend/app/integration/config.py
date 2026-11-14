@@ -10,8 +10,9 @@ import os
 # فعال/غیرفعال بودن ماژول یکپارچگی
 ENABLED = os.getenv("BARNAMEHYAR_ENABLED", "1") != "0"
 
-# نشانی پایهٔ سامانهٔ برنامه‌یار۳۶۰
-BASE_URL = os.getenv("BARNAMEHYAR_BASE_URL", "http://188.212.96.235:8083").rstrip("/")
+# نشانی پایهٔ سامانهٔ برنامه‌یار۳۶۰ (از نسخهٔ ۲.۴.۰ روی پورت ۸۰۸۷؛
+# در «تنظیمات سامانه» داشبورد قابل ویرایش است و تغییر در پایگاه داده ذخیره می‌شود)
+BASE_URL = os.getenv("BARNAMEHYAR_BASE_URL", "http://188.212.96.235:8087").rstrip("/")
 
 # حساب سامانه‌ای برای همگام‌سازی (کاربر «سامانه»؛ شخصی نیست)
 USERNAME = os.getenv("BARNAMEHYAR_USERNAME", "admin")
