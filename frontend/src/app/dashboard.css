@@ -487,3 +487,17 @@
 .st-flash-ok { background: #e8f6f1; color: #0e6b63; border: 1px solid #bfe6d8; }
 .st-flash-err { background: #fdecea; color: #c0392b; border: 1px solid #f2c4bd; }
 .st-note { font-size: 12.5px; color: #5b6b7b; line-height: 2; }
+
+/* ---------- شرایط هماهنگی SSO ---------- */
+.st-coordination .st-title { margin-bottom: 8px; }
+.st-checks { list-style: none; margin: 12px 0 0; padding: 0; }
+.st-checks li { padding: 7px 10px; border-bottom: 1px dashed #edf1f4; font-size: 12.5px; line-height: 1.9; }
+.st-checks li b { display: inline-block; width: 20px; font-weight: 800; }
+.st-checks li small { color: #7b8a99; }
+.st-chk-ok b { color: #0e6b63; }
+.st-chk-bad { background: #fdf6f5; }
+.st-chk-bad b { color: #c0392b; }
+.st-reg { margin-top: 8px; }
+.st-reg td { border-bottom: 1px solid #f0f3f6; padding: 8px 10px; font-size: 12px; }
+.st-reg-label { color: #5b6b7b; font-weight: 700; width: 240px; }
+.st-reg-val { color: #1f2d3d; word-break: break-all; }

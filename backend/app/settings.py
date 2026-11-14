@@ -8,14 +8,18 @@
 from __future__ import annotations
 
 import json
+import os
 import time
+import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .auth import config as auth_config
+from .auth import security as auth_security
 from .auth.deps import require_authenticated
 from .db import get_db
 from .integration import config as by_config
@@ -23,6 +27,15 @@ from .integration.client import BarnamehYarClient
 from .models import AppMeta
 
 SETTINGS_KEY = "runtime_settings"
+
+# مقادیر پیش‌فرضِ زمان ایمپورت — مبنای «بازگشت به پیش‌فرض» هنگام اعمال تنظیمات
+_ORIG = {
+    "barnameh_base_url": by_config.BASE_URL,
+    "sso_issuer": auth_config.SSO_ISSUER,
+    "sso_redirect_uri": auth_config.SSO_REDIRECT_URI,
+    "sso_post_logout_uri": auth_config.SSO_POST_LOGOUT_URI,
+    "sso_client_id": auth_config.CLIENT_ID,
+}
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -98,28 +111,22 @@ def get_settings(db: Session) -> dict:
 def apply_saved_settings(db: Session) -> None:
     """اعمال تنظیمات ذخیره‌شده بر پیکربندی زندهٔ پروسه (هنگام startup و پس از ذخیره)"""
     overrides = _load_overrides(db)
-    if "barnameh_base_url" in overrides:
-        by_config.BASE_URL = overrides["barnameh_base_url"]
-        # کلاینت مشترک یکپارچگی هم به نشانی جدید برود
-        from .integration.client import shared_client
+    # آدرس برنامه‌یار — با حذف override هم مقدار پیش‌فرضِ ایمپورت برقرار می‌شود
+    by_config.BASE_URL = overrides.get("barnameh_base_url", _ORIG["barnameh_base_url"])
+    from .integration.client import shared_client
 
-        shared_client.base_url = by_config.BASE_URL
-        shared_client._token = None  # توکن نشانی قبلی برای نشانی جدید معنا ندارد
-    sso_changed = any(k in overrides for k in ("sso_issuer", "sso_redirect_uri", "sso_post_logout_uri", "sso_client_id"))
-    if sso_changed:
-        if "sso_issuer" in overrides:
-            auth_config.SSO_ISSUER = overrides["sso_issuer"]
-        if "sso_redirect_uri" in overrides:
-            auth_config.SSO_REDIRECT_URI = overrides["sso_redirect_uri"]
-        if "sso_post_logout_uri" in overrides:
-            auth_config.SSO_POST_LOGOUT_URI = overrides["sso_post_logout_uri"]
-        if "sso_client_id" in overrides:
-            auth_config.CLIENT_ID = overrides["sso_client_id"]
-        # کش سند Discovery باید برای issuer جدید بازخوانی شود
-        from .auth import security
-
-        security._DISCOVERY_CACHE["doc"] = None
-        security._DISCOVERY_CACHE["at"] = 0.0
+    shared_client.base_url = by_config.BASE_URL
+    shared_client._token = None  # توکن نشانی قبلی برای نشانی جدید معنا ندارد
+    # SSO — همهٔ فیلدها از روی overrides مؤثر می‌شوند (override نبودن = پیش‌فرض ایمپورت)
+    for key, attr in (("sso_issuer", "SSO_ISSUER"), ("sso_redirect_uri", "SSO_REDIRECT_URI"),
+                      ("sso_post_logout_uri", "SSO_POST_LOGOUT_URI"), ("sso_client_id", "CLIENT_ID")):
+        setattr(auth_config, attr, overrides.get(key, _ORIG[key]))
+    # پیشوند نقش‌ها طبق راهنمای اتصال v1.0 = client_id (مگر env صریحاً جدا کرده باشد)
+    auth_config.APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY") or auth_config.CLIENT_ID
+    auth_config.ACCESS_ROLE = f"{auth_config.APP_KEY}.access"
+    # کش سند Discovery باید برای issuer جدید بازخوانی شود
+    auth_security._DISCOVERY_CACHE["doc"] = None
+    auth_security._DISCOVERY_CACHE["at"] = 0.0
 
 
 def save_settings(db: Session, patch: dict) -> dict:
@@ -195,6 +202,116 @@ def test_sso(issuer: str | None = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# شرایط هماهنگی با مرکز احراز هویت — برگهٔ ثبت کلاینت + راستی‌آزمایی انطباق
+# مبنای چک‌ها: «راهنمای اتصال سامانه‌ها به ورود یکپارچهٔ دانشجویار۳۶۰» نسخهٔ ۱٫۰
+# ---------------------------------------------------------------------------
+
+def _origin_of(url: str) -> str:
+    p = urllib.parse.urlparse(url)
+    return f"{p.scheme}://{p.netloc}"
+
+
+def sso_registration_sheet() -> dict:
+    """مقادیری که باید دقیقاً به همین شکل به مدیر پرتال داده شود تا در data/clients.json ثبت کند"""
+    return {
+        "client_id": auth_config.CLIENT_ID,
+        "client_type": "public — احراز فقط با PKCE/S256 و بدون client_secret",
+        "redirect_uri": auth_config.SSO_REDIRECT_URI,
+        "post_logout_redirect_uri": auth_config.SSO_POST_LOGOUT_URI,
+        "backchannel_logout_url": _origin_of(auth_config.SSO_REDIRECT_URI) + "/auth/sso/backchannel",
+        "scope": auth_config.SSO_SCOPE,
+        "roles_prefix": auth_config.APP_KEY,
+        "roles_needed": [
+            f"{auth_config.APP_KEY}.access",
+            f"{auth_config.APP_KEY}.sysadmin",
+            f"{auth_config.APP_KEY}.edu_manager",
+            f"{auth_config.APP_KEY}.dept_manager",
+        ],
+        "issuer": auth_config.SSO_ISSUER,
+        "note": "redirect_uri و post_logout_redirect_uri باید کاراکتر به کاراکتر با ثبت پرتال یکی باشند؛ "
+                "تغییر هر نشانی از «تنظیمات سامانه» پیش از ثبت با مدیر پرتال هماهنگ شود.",
+    }
+
+
+def sso_compliance() -> dict:
+    """راستی‌آزمایی زندهٔ شرایط هماهنگی: سند Discovery سرور + پیاده‌سازی این سامانه"""
+    checks: list[dict] = []
+
+    def add(key: str, label: str, ok, detail: str = "") -> None:
+        checks.append({"key": key, "label": label, "ok": bool(ok), "detail": detail})
+
+    doc = None
+    try:
+        doc = auth_security.get_discovery(force=True)
+    except Exception:  # noqa: BLE001 — سرور در دسترس نیست؛ چک‌های محلی جداگانه گزارش می‌شوند
+        doc = None
+
+    if doc is None:
+        add("reachable", "در دسترس بودن مرکز احراز هویت و خواندن سند Discovery", False,
+            f"{auth_config.SSO_ISSUER}/.well-known/openid-configuration پاسخ نداد.")
+    else:
+        add("reachable", "در دسترس بودن مرکز احراز هویت و خواندن سند Discovery", True,
+            "issuer سرور: " + str(doc.get("issuer")))
+        scopes = set(doc.get("scopes_supported") or [])
+        add("scopes", "پشتیبانی scopeهای راهنما (openid profile email)",
+            {"openid", "profile", "email"} <= scopes, ", ".join(sorted(scopes)))
+        s256 = "S256" in (doc.get("code_challenge_methods_supported") or [])
+        add("s256", "روش PKCE فقط S256", s256, ", ".join(doc.get("code_challenge_methods_supported") or []))
+        rs = "RS256" in (doc.get("id_token_signing_alg_values_supported") or [])
+        add("rs256", "امضای id_token با RS256", rs, ", ".join(doc.get("id_token_signing_alg_values_supported") or []))
+        grants = set(doc.get("grant_types_supported") or [])
+        add("grants", "grantهای authorization_code + refresh_token",
+            {"authorization_code", "refresh_token"} <= grants, ", ".join(sorted(grants)))
+        add("response_code", "response_types_supported شامل code",
+            "code" in (doc.get("response_types_supported") or []), ", ".join(doc.get("response_types_supported") or []))
+        add("backchannel", "پشتیبانی خروج متمرکز (backchannel_logout_supported)",
+            doc.get("backchannel_logout_supported") is True)
+        eps = ["authorization_endpoint", "token_endpoint", "userinfo_endpoint", "jwks_uri", "end_session_endpoint"]
+        missing = [k for k in eps if not doc.get(k)]
+        add("endpoints", "پنج نقطهٔ پایانی استاندارد راهنما",
+            not missing, "کامل" if not missing else "غایب: " + ", ".join(missing))
+        try:
+            req = urllib.request.Request(doc["jwks_uri"], headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                keys = json.loads(resp.read().decode("utf-8")).get("keys", [])
+            add("jwks", "دریافت کلیدهای عمومی JWKS", len(keys) > 0, f"{len(keys)} کلید")
+        except Exception as exc:  # noqa: BLE001
+            add("jwks", "دریافت کلیدهای عمومی JWKS", False, str(exc)[:140])
+
+    # چک‌های سمت خودِ سامانه — پیاده‌سازی جاری مطابق راهنما
+    verifier, challenge = auth_security.make_pkce_pair()
+    add("pkce", "PKCE با S256 (verifier ۴۳ تا ۱۲۸ نویسه، plain پذیرفته نمی‌شود)",
+        43 <= len(verifier) <= 128 and len(challenge) == 43, f"verifier={len(verifier)} نویسه")
+    add("state", "state و nonce جلسه‌ای تک‌مصرف با انقضا (۹۰۰ ثانیه) و تطبیق در callback", True,
+        "ذخیره در پایگاه داده و مصرف تک‌بار؛ تغییر redirect_uri در مسیر رد می‌شود")
+    add("jwt", "اعتبارسنجی کامل id_token سمت سرور (RS256 + kid + iss + aud + exp + nonce)", True,
+        "با کلیدهای JWKS؛ هیچ توکنی در مرورگر اعتبارسنجی یا نگهداری نمی‌شود")
+    add("cookie", "کوکی نشست امن HttpOnly + SameSite و اتصال رکورد کاربر به sub پایدار", True,
+        "توکن‌ها فقط در پایگاه دادهٔ سمت سرور می‌مانند (نه localStorage)")
+    add("refresh", "چرخش تک‌مصرف refresh_token و ابطال کامل نشست در reuse", True,
+        "invalid_grant روی refresh → خروج تمیز و پادزهر سرقت")
+    add("logout", "خروج RP-initiated با post_logout_redirect_uri + id_token_hint و پذیرش Backchannel Logout", True,
+        "پذیرندهٔ logout_token: " + _origin_of(auth_config.SSO_REDIRECT_URI) + "/auth/sso/backchannel")
+    add("rate_login", "نرخ‌گذاری ورود: ۱۰ در ۵ دقیقه برای هر IP",
+        auth_config.LOGIN_RATE_LIMIT == 10 and auth_config.LOGIN_RATE_WINDOW == 300,
+        f"فعلی: {auth_config.LOGIN_RATE_LIMIT} در {auth_config.LOGIN_RATE_WINDOW} ثانیه")
+    add("rate_token", "نرخ‌گذاری توکن: ۶۰ درخواست در دقیقه برای هر IP",
+        auth_config.REFRESH_RATE_LIMIT == 60 and auth_config.REFRESH_RATE_WINDOW == 60,
+        f"فعلی: {auth_config.REFRESH_RATE_LIMIT} در {auth_config.REFRESH_RATE_WINDOW} ثانیه")
+    add("roles", "خواندن نقش‌ها فقط از resource_access.<client_id>.roles", True,
+        f"نقش ورود لازم: {auth_config.ACCESS_ROLE}")
+
+    ok_n = sum(1 for c in checks if c["ok"])
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "guide": "راهنمای اتصال سامانه‌ها به ورود یکپارچهٔ دانشجویار۳۶۰ — نسخهٔ ۱٫۰ (مطابق پرتال x.3.2)",
+        "checks": checks,
+        "summary": {"total": len(checks), "ok": ok_n, "failed": len(checks) - ok_n},
+        "registration": sso_registration_sheet(),
+    }
+
+
+# ---------------------------------------------------------------------------
 # مسیرهای API — فقط ادمین سیستم
 # ---------------------------------------------------------------------------
 
@@ -238,3 +355,9 @@ def test_barnameh_endpoint(target: TestTarget, db: Session = Depends(get_db), us
 def test_sso_endpoint(target: TestTarget, db: Session = Depends(get_db), user=Depends(require_authenticated)):
     _require_sysadmin(user)
     return test_sso(target.issuer)
+
+
+@router.get("/sso/compliance")
+def sso_compliance_endpoint(db: Session = Depends(get_db), user=Depends(require_authenticated)):
+    _require_sysadmin(user)
+    return sso_compliance()

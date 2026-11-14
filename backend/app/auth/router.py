@@ -49,7 +49,8 @@ from .models import AppUser, AuthFlow, AuthSession
 router = APIRouter(tags=["auth"])
 
 ERROR_MESSAGES = {
-    "no_access": "دسترسی به این سامانه برای شما ثبت نشده است؛ برای دریافت دسترسی با مدیر SSO تماس بگیرید (نقش daneshjo.access).",
+    "no_access": f"دسترسی به این سامانه برای شما ثبت نشده است؛ برای دریافت دسترسی با مدیر SSO تماس بگیرید "
+                 f"(نقش {config.ACCESS_ROLE} در فهرست resource_access.{config.CLIENT_ID}.roles).",
     "sso": "ارتباط با مرکز احراز هویت سازمانی برقرار نشد؛ لطفاً کمی بعد دوباره تلاش کنید.",
     "state": "جریان ورود منقضی یا نامعتبر بود؛ لطفاً دوباره وارد شوید.",
     "token": "تبادل توکن یا اعتبارسنجی ورود ناموفق بود؛ لطفاً دوباره وارد شوید.",
@@ -253,7 +254,7 @@ def sso_login(request: Request, db: DBSession = Depends(get_db)):
         "client_id": config.CLIENT_ID,
         "redirect_uri": config.SSO_REDIRECT_URI,
         "response_type": "code",
-        "scope": "openid profile",
+        "scope": config.SSO_SCOPE,  # طبق راهنمای اتصال v1.0: openid profile email
         "state": state,
         "nonce": nonce,
         "code_challenge": challenge,
@@ -375,7 +376,7 @@ async def backchannel_logout(request: Request, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="logout_token missing")
     try:
         claims = verify_rs256_jwt(logout_token, audience=config.CLIENT_ID,
-                                  require={"exp", "iat", "iss", "sub"})
+                                  require={"exp", "iat", "iss"})
     except SSOError:
         raise HTTPException(status_code=400, detail="invalid logout_token")
     events = claims.get("events") or {}
@@ -386,5 +387,8 @@ async def backchannel_logout(request: Request, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="logout_token must not contain nonce")
     sid = claims.get("sid")
     sub = claims.get("sub")
+    if not sid and not sub:
+        # طبق استاندارد Backchannel Logout، حداقل یکی از sid یا sub باید باشد
+        raise HTTPException(status_code=400, detail="logout_token must contain sid or sub")
     revoke_by_sid_or_sub(db, sid=sid, sub=sub)
     return Response(status_code=204)

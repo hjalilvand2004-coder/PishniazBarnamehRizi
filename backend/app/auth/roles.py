@@ -6,8 +6,9 @@
   * edu_manager   — مدیرآموزش: سرویس‌های سطح دانشگاه/آموزش کل
   * dept_manager  — مدیرگروه: سرویس‌های سطح گروه آموزشی
 
-نقش‌های SSO در توکن به شکل «daneshjo.sysadmin»، «daneshjo.edu_manager» و
-«daneshjo.dept_manager» منتقل می‌شوند؛ در نبود هر سه، نقش پیش‌فرض اعمال می‌شود.
+نقش‌های SSO در توکن به شکل «<client_id>.<نقش» می‌آیند — مثلاً «daneshjo360.sysadmin»،
+«daneshjo360.edu_manager» و «daneshjo360.dept_manager» (فقط نقش‌های
+resource_access.<client_id>.roles خوانده می‌شوند)؛ در نبود هر سه، نقش پیش‌فرض اعمال می‌شود.
 """
 
 ROLES = {

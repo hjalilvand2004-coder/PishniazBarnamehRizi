@@ -100,12 +100,31 @@ def http_post_form(url: str, fields: dict, timeout: int = 20) -> dict:
     except urllib.error.HTTPError as exc:
         if exc.code == 429:
             raise SSORateLimit(config.RATE_MESSAGE) from exc
-        detail = ""
+        # کد خطای استاندارد OAuth از بدنهٔ پاسخ — پیام فارسی مطابق جدول ۵ راهنمای اتصال v1.0
+        body = ""
         try:
-            detail = exc.read().decode("utf-8", errors="replace")[:300]
+            body = exc.read().decode("utf-8", errors="replace")[:600]
         except Exception:  # noqa: BLE001
             pass
-        raise SSOError(f"تبادل توکن ناموفق بود (کد {exc.code}). لطفاً دوباره وارد شوید. {detail}") from exc
+        err_code, err_desc = "", ""
+        try:
+            parsed = json.loads(body)
+            err_code = parsed.get("error", "")
+            err_desc = parsed.get("error_description") or parsed.get("error_hint") or ""
+        except Exception:  # noqa: BLE001
+            pass
+        OAUTH_ERROR_FA = {
+            "invalid_client": "کلاینت SSO شناخته نشد؛ client_id یا نوع کلاینت با مقدار ثبت‌شدهٔ پرتال یکی نیست. "
+                              "مقادیر برگهٔ هماهنگی را با مدیر پرتال نهایی کنید.",
+            "invalid_grant": "کد مجوز یا code_verifier نامعتبر است یا قبلاً مصرف شده؛ لطفاً از نو وارد شوید.",
+            "unauthorized_client": "این کلاینت مجاز به این درخواست نیست؛ با مدیر پرتال هماهنگ کنید.",
+            "invalid_scope": "scope درخواستی مجاز نیست؛ مقدار «openid profile email» لازم است.",
+        }
+        if err_code in OAUTH_ERROR_FA:
+            raise SSOError(OAUTH_ERROR_FA[err_code]) from exc
+        if err_code == "invalid_request":
+            raise SSOError(f"درخواست ورود ناقص بود: {err_desc or 'پارامترهای Authorize را بازبینی کنید.'}") from exc
+        raise SSOError(f"تبادل توکن ناموفق بود (کد {exc.code}{f' — {err_code}' if err_code else ''}). لطفاً دوباره وارد شوید.") from exc
     except Exception as exc:  # noqa: BLE001
         raise SSOError("ارتباط با سرور احراز هویت مرکزی برقرار نشد؛ لطفاً بعداً دوباره تلاش کنید.") from exc
 

@@ -10,8 +10,11 @@ import os
 SSO_ISSUER = os.getenv("DANESHJO360_SSO_ISSUER", "http://188.212.96.235:8086")
 
 # --- شناسه‌های این سامانه در کاتالوگ SSO --------------------------------------
-APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY", "daneshjo")           # نقش‌ها: daneshjo.access و …
-CLIENT_ID = os.getenv("DANESHJO360_SSO_CLIENT_ID", "daneshjo360")    # کلاینت public
+CLIENT_ID = os.getenv("DANESHJO360_SSO_CLIENT_ID", "daneshjo360")    # کلاینت public — باید با ثبت پرتال یکی باشد
+# پیشوند نقش‌های توکن طبق «راهنمای اتصال سامانه‌ها به ورود یکپارچهٔ دانشجویار۳۶۰» v1.0:
+# نقش‌ها در resource_access.<client_id>.roles به شکل «<client_id>.<نقش» می‌آیند؛
+# پس پیش‌فرض app_key همان client_id است (env می‌تواند آن را جدا کند).
+APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY") or CLIENT_ID
 APP_NAME = "دانشجو۳۶۰"
 
 # redirect_uri باید کاراکتر به کاراکتر با مقدار ثبت‌شده در سرور SSO یکی باشد
@@ -26,6 +29,9 @@ SSO_POST_LOGOUT_URI = os.getenv(
 
 # نقش مورد نیاز برای ورود به سامانه (تخصیص توسط مدیر SSO در پنل کاربران)
 ACCESS_ROLE = f"{APP_KEY}.access"
+
+# scope استاندارد ورود طبق راهنمای اتصال v1.0 (بخش ۵): openid profile email
+SSO_SCOPE = os.getenv("DANESHJO360_SSO_SCOPE", "openid profile email")
 
 # --- نشست محلی ---------------------------------------------------------------
 SESSION_COOKIE = "d360_session"
