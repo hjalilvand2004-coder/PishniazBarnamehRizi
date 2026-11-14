@@ -100,3 +100,11 @@ class Offering(Base):
     satisfaction = Column(Float)                        # میانگین نظرسنجی ۱ تا ۵
     evaluation_count = Column(Integer, nullable=False, default=0)  # تعداد پاسخ نظرسنجی
     mode = Column(String(16), nullable=False, default="حضوری")  # حضوری/ترکیبی/مجازی
+
+
+class AppMeta(Base):
+    """متادیتای سامانه — مبنای داده، برآوردها و مبدأ (برای شفافیت تحلیل‌ها)"""
+    __tablename__ = "app_meta"
+
+    key = Column(String(64), primary_key=True)
+    value = Column(JSON, nullable=False)

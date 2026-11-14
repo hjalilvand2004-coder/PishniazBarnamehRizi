@@ -97,6 +97,28 @@ class ByInstructor(Base):
     synced_at = Column(Integer, nullable=False, default=0)
 
 
+class ByOfferedCourse(Base):
+    """آینهٔ سرویس «دروس ارائه» — برای تطبیق کاتالوگ و غنی‌سازی دروس مبنای سامانه"""
+    __tablename__ = "by_offered_courses"
+
+    id = Column(Integer, primary_key=True)
+    external_id = Column(Integer, nullable=False, index=True)
+    unique_code = Column(String(32), nullable=True, index=True)
+    unique_title = Column(String(200), nullable=True)
+    offered_title = Column(String(200), nullable=True)
+    course_type = Column(String(64), nullable=True)
+    type_course = Column(String(32), nullable=True)
+    year = Column(String(16), nullable=True)
+    theoretical_hours = Column(Integer, nullable=True)
+    practical_hours = Column(Integer, nullable=True)
+    prerequisite = Column(String(200), nullable=True)
+    corequisite = Column(String(200), nullable=True)
+    enrollment_count = Column(Integer, nullable=True)
+    demand_prediction = Column(Integer, nullable=True)
+    is_active = Column(Integer, nullable=True, default=1)
+    synced_at = Column(Integer, nullable=False, default=0)
+
+
 class BySyncLog(Base):
     """لاگ همگام‌سازی — مبنای نمایش وضعیت «آخرین همگام‌سازی» در داشبورد"""
     __tablename__ = "by_sync_log"

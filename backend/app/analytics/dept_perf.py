@@ -10,6 +10,7 @@ from ..models import Course, Department, Instructor, Major, Offering, Student
 from .base import (
     ADJUNCT_FTE, OVERHEAD_PER_OFFERING, ROOM_HOURLY_COST, TEACHING_WEEKS,
     fa_int, ok, r1, wavg,
+    real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 )
 
 
@@ -132,6 +133,12 @@ def department_performance(db):
          "value": f"{fa_int(min(ratios))} تا {fa_int(max(ratios))}" if ratios else "—"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = student_missing_limitation(db)
+    if _m: extra_limits.append(_m)
+    _m = eval_missing_limitation(db, "رضایت نظرسنجی")
+    if _m: extra_limits.append(_m)
+
     return ok(
         "department-performance", "تحلیل عملکرد دانشکده‌ها", 6,
         filters={},
@@ -153,5 +160,5 @@ def department_performance(db):
             "وزن‌های شاخص مرکب فرض مدیریتی‌اند و باید با اولویت‌های سازمان تنظیم شوند.",
             "این ابزار برای شفاف‌سازی است، نه رتبه‌بندی رسمی؛ تصمیم با شوراهای ذی‌صلاح است.",
             "هزینه‌ها بر مبنای نرخ‌های نمونه محاسبه شده و باید با نرخ‌های واقعی سازمان جایگزین شود.",
-        ],
+        ] + extra_limits,
     )

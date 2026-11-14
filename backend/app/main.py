@@ -43,7 +43,7 @@ from .data.services import SERVICES, get_service, get_services
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 STATIC_DIR = BASE_DIR / "static"
 
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.3.0"
 
 
 @asynccontextmanager

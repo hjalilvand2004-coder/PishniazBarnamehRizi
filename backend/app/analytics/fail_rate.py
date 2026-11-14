@@ -7,11 +7,23 @@
 from .base import (
     CRITICAL_FAIL_RATE, fa_int, fa_pct, filtered_courses, ok,
     offerings_by_course, ordered_terms, r0, r1, slope_pct, wavg,
+    real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 )
 
 
 def fail_rate(db, department_id=None, course_id=None, term_id=None, threshold=20):
     threshold = float(threshold or 20)
+    _gate = result_missing_limitation(db)
+    if _gate:
+        return ok(
+            "fail-rate", "تحلیل نرخ مردودی", 7,
+            filters={"department_id": department_id, "course_id": course_id, "term_id": term_id, "threshold": threshold},
+            kpis=[{"label": "دادهٔ نتایج ارزشیابی", "value": "در منبع ثبت نشده", "tone": "warn"}],
+            charts=[],
+            table={"columns": [], "rows": []},
+            method="بدون دادهٔ نتایج ارزشیابی (قبولی/مردودی)، تحلیل نرخ مردودی تولید نمی‌شود.",
+            limitations=[_gate] + real_basis_limitations(db),
+        )
     courses = filtered_courses(db, department_id, course_id)
     by_course = offerings_by_course(db)
     term_label = {t.id: t.label for t in ordered_terms(db)}
@@ -85,6 +97,10 @@ def fail_rate(db, department_id=None, course_id=None, term_id=None, threshold=20
          "value": f"{rows[0]['course'].split(' — ')[0]} ({fa_pct(rows[0]['fail_avg_pct'])})" if rows else "—"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = result_missing_limitation(db)
+    if _m: extra_limits.append(_m)
+
     return ok(
         "fail-rate", "تحلیل نرخ مردودی", 7,
         filters={"department_id": department_id, "course_id": course_id, "term_id": term_id, "threshold": threshold},
@@ -104,5 +120,5 @@ def fail_rate(db, department_id=None, course_id=None, term_id=None, threshold=20
             "داده تجمیعی و بدون هویت است؛ هرگونه تحلیل در سطح دانشجوی منفرد از دامنه این سامانه خارج است.",
             "مقایسه نرخ مردودی فقط «درون یک درس» یا بین دروس با ماهیت مشابه معنادار است.",
             "آستانه‌های بحرانی/هشدار فرض مدیریتی‌اند و باید با ضوابط آموزشی سازمان تنظیم شوند.",
-        ],
+        ] + extra_limits,
     )

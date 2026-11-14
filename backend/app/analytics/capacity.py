@@ -6,7 +6,7 @@
 """
 import math
 
-from .base import fa_int, filtered_courses, ok, offerings_by_course, ordered_terms, r0, r1
+from .base import fa_int, filtered_courses, ok, offerings_by_course, ordered_terms, r0, r1, real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 
 ALPHA = 0.5
 SAFETY_MARGIN = 0.10  # حاشیه امنیت ظرفیت پیشنهادی
@@ -110,6 +110,8 @@ def capacity_forecast(db, department_id=None, course_id=None):
          "hint": "پهنای نسبی بازه اطمینان تقریبی ۸۰٪"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+
     return ok(
         "capacity-forecast", "پیش‌بینی ظرفیت کلاس‌ها", 2,
         filters={"department_id": department_id, "course_id": course_id},
@@ -132,5 +134,5 @@ def capacity_forecast(db, department_id=None, course_id=None):
             "فرض بنیادین، تداوم الگوی تاریخی است؛ تغییر برنامه درسی، شهریه یا قواعد ثبت‌نام اعتبار پیش‌بینی را کاهش می‌دهد.",
             "افق پیش‌بینی یک نیم‌سال تحصیلی است؛ پیش‌بینی چندساله با همین روش انجام نمی‌شود.",
             "برای درس با کمتر از سه ترم داده، پیش‌بینی اولیه با عدم قطعیت ۳۰٪ گزارش می‌شود و باید با احتیاط بهره‌برداری شود.",
-        ],
+        ] + extra_limits,
     )

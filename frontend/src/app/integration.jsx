@@ -533,9 +533,9 @@ function PlanTab() {
 }
 
 // ---------------------------------------------------------------------------
-// صفحهٔ اصلی یکپارچگی
+// پنل «منبع دادهٔ برنامه‌یار۳۶۰» — بخشی از همان داشبورد واحد (نه نرم‌افزار جدا)
 // ---------------------------------------------------------------------------
-export default function IntegrationView({ onBack }) {
+export default function DataSourcePanel() {
   const http = useHttp();
   const [status, setStatus] = useState(null);
   const [tab, setTab] = useState("term");
@@ -573,9 +573,13 @@ export default function IntegrationView({ onBack }) {
       const res = await http.post(`/api/integration/sync/${source}`, {});
       const results = res.results || [res];
       const bad = results.filter((r) => r.status !== "ok");
+      const rebase = res.rebase;
+      const rebaseTxt = rebase?.rebuilt
+        ? ` — دیتای مبنا بازسازی شد: ${toFa(rebase.counts?.offerings ?? 0)} گروه کلاس، ${toFa(rebase.counts?.courses ?? 0)} درس، ${toFa(rebase.counts?.instructors ?? 0)} استاد`
+        : (rebase?.reason ? ` — بازسازی مبنا: ${rebase.reason}` : "");
       setFlash(bad.length
         ? { kind: "error", text: bad.map((b) => `${b.label || b.source}: ${b.error || "ناموفق"}`).join(" | ") }
-        : { kind: "ok", text: `همگام‌سازی انجام شد — ${results.map((r) => `${r.label}: ${toFa(r.inserted)} رکورد`).join("، ")}` });
+        : { kind: "ok", text: `همگام‌سازی انجام شد — ${results.map((r) => `${r.label}: ${toFa(r.inserted)} رکورد`).join("، ")}${rebaseTxt}` });
     } catch (e) {
       setFlash({ kind: "error", text: e.message });
     } finally {
@@ -590,18 +594,17 @@ export default function IntegrationView({ onBack }) {
     setChecking(false);
   }, [loadStatus]);
 
-  if (!status) return <div className="by-root"><p className="by-empty">در حال دریافت وضعیت یکپارچگی…</p></div>;
+  if (!status) return <div className="by-root by-embedded"><p className="by-empty">در حال دریافت وضعیت منبع داده…</p></div>;
 
   return (
-    <div className="by-root">
+    <div className="by-root by-embedded">
       <header className="by-header">
         <div>
-          <h2 className="by-title">یکپارچگی با برنامه‌یار۳۶۰</h2>
+          <h2 className="by-title">منبع دادهٔ برنامه‌یار۳۶۰</h2>
           <p className="by-subtitle">
-            همگام‌سازی برخط دروس ترمیک، سوابق برنامه‌ریزی و کلاس‌ها و اتاق‌های درس — و ارسال برنامه‌ریزی اولیهٔ دانشجو۳۶۰ به برنامه‌یار۳۶۰
+            همگام‌سازی برخط دروس ترمیک، سوابق برنامه‌ریزی و کلاس‌ها و اتاق‌های درس — و بازسازی خودکار دیتای مبنا و ارسال برنامه‌ریزی اولیه به برنامه‌یار۳۶۰
           </p>
         </div>
-        <button type="button" className="by-btn by-btn-light" onClick={onBack}>بازگشت به داشبورد</button>
       </header>
 
       <div className="by-two-col">

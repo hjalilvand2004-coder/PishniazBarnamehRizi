@@ -399,3 +399,39 @@
 .dj2-userchip-name { font-size: 12.5px; font-weight: 700; color: #ffffff; }
 .dj2-userchip-role { font-size: 11px; color: #6fdcc7; font-weight: 600; }
 .dj2-btn-exit { margin-top: 8px; }
+
+/* ---------- بنر مبنای داده (واقعی / نمونه) ---------- */
+.dj2-basis {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.9;
+}
+
+.dj2-basis-real { background: #e8f6f1; border: 1px solid #bfe6d8; color: #0e6b63; }
+.dj2-basis-demo { background: #fdf6e7; border: 1px solid #f0dbb3; color: #8a6d1a; }
+
+.dj2-basis-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dj2-basis-real .dj2-basis-dot { background: #148f77; box-shadow: 0 0 0 3px rgba(20, 143, 119, 0.15); }
+.dj2-basis-demo .dj2-basis-dot { background: #d68910; box-shadow: 0 0 0 3px rgba(214, 137, 16, 0.15); }
+
+.dj2-basis-text { flex: 1 1 320px; }
+
+.dj2-basis-btn {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 9px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dj2-basis-btn:hover { background: rgba(255, 255, 255, 0.55); }

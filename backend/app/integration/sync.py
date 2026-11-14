@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import os
 import time
 from datetime import datetime, timezone
 
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session
 from ..db import SessionLocal
 from . import config
 from .client import IntegrationError, shared_client
-from .models import ByInstructor, ByRoom, ByScheduleHistory, BySyncLog, ByTermCourse
+from .models import ByInstructor, ByOfferedCourse, ByRoom, ByScheduleHistory, BySyncLog, ByTermCourse
 
 FA_DIGITS = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 TERM_WORDS = {"یک": 1, "دو": 2, "سه": 3, "چهار": 4, "پنج": 5, "شش": 6, "هفت": 7, "هشت": 8}
@@ -138,11 +139,32 @@ def map_instructor(row: dict, now: int) -> ByInstructor:
     )
 
 
+def map_offered_course(row: dict, now: int) -> ByOfferedCourse:
+    return ByOfferedCourse(
+        external_id=_to_int(row.get("id")) or 0,
+        unique_code=None if row.get("unique_code") in (None, "", "یافت نشد") else _to_str(row.get("unique_code")),
+        unique_title=_to_str(row.get("unique_title")),
+        offered_title=_to_str(row.get("offered_title")),
+        course_type=_to_str(row.get("course_type")),
+        type_course=_to_str(row.get("type_course")),
+        year=_to_str(row.get("year")),
+        theoretical_hours=_to_int(row.get("theoretical_hours")),
+        practical_hours=_to_int(row.get("practical_hours")),
+        prerequisite=_to_str(row.get("prerequisite")),
+        corequisite=_to_str(row.get("corequisite")),
+        enrollment_count=_to_int(row.get("enrollment_count")),
+        demand_prediction=_to_int(row.get("demand_prediction")),
+        is_active=1 if row.get("is_active") else 0,
+        synced_at=now,
+    )
+
+
 MAPPERS = {
     "term_courses": (ByTermCourse, map_term_course),
     "schedule_history": (ByScheduleHistory, map_schedule_history),
     "rooms": (ByRoom, map_room),
     "instructors": (ByInstructor, map_instructor),
+    "offered_courses": (ByOfferedCourse, map_offered_course),
 }
 
 
@@ -211,7 +233,11 @@ def sync_source(db: Session, source_key: str) -> dict:
 
 
 def sync_all(db: Session) -> dict:
-    """همگام‌سازی همهٔ منابع آینه — خطای هر منبع نتیجهٔ بقیه را خراب نمی‌کند"""
+    """همگام‌سازی همهٔ منابع آینه — خطای هر منبع نتیجهٔ بقیه را خراب نمی‌کند
+
+    پس از همگام‌سازی موفق، «دیتای مبنا» سامانه نیز به‌صورت خودکار از دادهٔ واقعی
+    بازسازی می‌شود (قابل غیرفعال‌سازی با DANESHJO360_AUTO_REBASE=0).
+    """
     results = []
     for key in config.MIRROR_SOURCES:
         try:
@@ -226,12 +252,21 @@ def sync_all(db: Session) -> dict:
                 "duration_ms": 0,
                 "error": str(e),
             })
-    return {
+    out = {
         "synced_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "remote": config.BASE_URL,
         "results": results,
         "ok": all(r["status"] == "ok" for r in results),
     }
+
+    # بازسازی خودکار دیتای مبنا — قلب «یک سامانهٔ یکپارچه روی دادهٔ واقعی»
+    if os.getenv("DANESHJO360_AUTO_REBASE", "1") != "0" and out["ok"]:
+        try:
+            from .rebase import rebase_from_synced
+            out["rebase"] = rebase_from_synced(db)
+        except Exception as e:  # خطای بازسازی مانع گزارش همگام‌سازی نمی‌شود
+            out["rebase"] = {"rebuilt": False, "reason": f"بازسازی دیتای مبنا ناموفق بود: {e}"}
+    return out
 
 
 def last_syncs(db: Session) -> dict[str, dict]:

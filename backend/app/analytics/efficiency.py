@@ -10,6 +10,7 @@
 from ..models import Course, Department, Instructor, Offering
 from .base import (
     ADJUNCT_FTE, fa_int, ok, r1, wavg,
+    real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 )
 
 
@@ -123,6 +124,10 @@ def teaching_efficiency(db):
          "hint": "باید همراه رضایت و قبولی خوانده شود"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = eval_missing_limitation(db, "رضایت نظرسنجی")
+    if _m: extra_limits.append(_m)
+
     return ok(
         "teaching-efficiency", "تحلیل بهره‌وری آموزش", 10,
         filters={},
@@ -142,5 +147,5 @@ def teaching_efficiency(db):
             "این شاخص باید همراه رضایت و نرخ قبولی خوانده شود؛ بهبود بهره‌وری به‌تنهایی مبنای کاهش نیرو نیست.",
             "وزن‌های شاخص مرکب فرض مدیریتی‌اند و قابل تنظیم‌اند.",
             "داده نمونه سینتتیک است؛ تصمیم‌های واقعی باید روی داده رسمی سازمان انجام شود.",
-        ],
+        ] + extra_limits,
     )

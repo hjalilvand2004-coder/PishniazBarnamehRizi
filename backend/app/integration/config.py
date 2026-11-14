@@ -52,5 +52,9 @@ SOURCES = {
     },
 }
 
-# منابعی که به‌صورت کامل آینه می‌شوند (سوابق برنامه‌ریزی، دروس ترمیک، اتاق‌ها، اساتید)
-MIRROR_SOURCES = ["term_courses", "schedule_history", "rooms", "instructors"]
+# منابعی که به‌صورت کامل آینه می‌شوند (دروس ترمیک، سوابق، اتاق‌ها، اساتید، دروس ارائه)
+MIRROR_SOURCES = ["term_courses", "schedule_history", "rooms", "instructors", "offered_courses"]
+
+# برآورد پرشدگی کلاس — منبع برنامه‌یار «ظرفیت برنامه‌ریزی‌شده» دارد نه ثبت‌نام واقعی؛
+# ثبت‌نام مبنای تحلیل با این نرخ برآورد می‌شود و در همهٔ خروجی‌ها صریحاً اعلام می‌گردد.
+DEFAULT_FILL_RATE = float(os.getenv("DANESHJO360_FILL_RATE", "0.85"))

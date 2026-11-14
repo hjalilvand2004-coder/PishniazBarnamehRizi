@@ -10,6 +10,7 @@ from ..models import Instructor
 from .base import (
     OVERHEAD_PER_OFFERING, ROOM_HOURLY_COST, TEACHING_WEEKS, TUITION_PER_CREDIT,
     fa_int, filtered_courses, ok, offerings_by_course, ordered_terms, r0, r1,
+    real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 )
 
 
@@ -118,6 +119,8 @@ def course_cost(db, department_id=None, course_id=None, room_hourly=None, weeks=
             {"key": "net", "label": "خالص", "format": "money"},
         ]
 
+    extra_limits = list(real_basis_limitations(db))
+
     return ok(
         "course-cost", "تحلیل هزینه دروس", 8,
         filters={"department_id": department_id, "course_id": course_id, "room_hourly": room_hourly,
@@ -130,5 +133,5 @@ def course_cost(db, department_id=None, course_id=None, room_hourly=None, weeks=
             "تفاوت هزینه درس‌های عملی/آزمایشگاهی/تزی با دروس نظری لحاظ نشده است.",
             "هزینه‌های غیرمستقیم کامل نیستند؛ خروجی برای پشتیبانی بودجه‌ریزی است، نه سند مالی رسمی.",
             "درآمد شهریه تنها در صورت فعال‌سازی پارامتر محاسبه می‌شود و برای دانشگاه‌های نوبشهری معنا ندارد.",
-        ],
+        ] + extra_limits,
     )

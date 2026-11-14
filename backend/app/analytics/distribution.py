@@ -5,7 +5,7 @@
 همه شمارش‌ها روی داده تجمیعی و بدون مشخصات هویتی انجام می‌شود.
 """
 from ..models import Department, Major, Student
-from .base import DEGREE_FA, STATUS_FA, ok, r1
+from .base import DEGREE_FA, STATUS_FA, ok, r1, real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 
 GROUP_BY_LABEL = {
     "major": "رشته",
@@ -72,6 +72,10 @@ def student_distribution(db, group_by="major", department_id=None, status="activ
          "value": f"{largest['group']} ({largest['pct']}٪)" if largest else "—"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = student_missing_limitation(db)
+    if _m: extra_limits.append(_m)
+
     return ok(
         "student-distribution", "تحلیل توزیع دانشجویان", 3,
         filters={"group_by": group_by, "department_id": department_id, "status": status},
@@ -86,5 +90,5 @@ def student_distribution(db, group_by="major", department_id=None, status="activ
             "توزیع بر اساس وضعیت ثبت‌نامی فعلی است؛ مرخصی‌ها و انتقال‌های در جریان ممکن است وضعیت را در آینده تغییر دهند.",
             "داده دانشجویان فاقد هرگونه مشخصات هویتی است (حریم خصوصی با طراحی) و فقط تحلیل تجمیعی مجاز است.",
             "متغیرهای جمعیت‌شناختی حساس (جنسیت، منطقه، معلولیت و…) نیازمند مجوز قانونی و رضایت آگاهانه‌اند و در این نسخه گردآوری نمی‌شوند.",
-        ],
+        ] + extra_limits,
     )

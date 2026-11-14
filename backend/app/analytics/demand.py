@@ -7,6 +7,7 @@
 from ..models import Department
 from .base import (
     fa_float, filtered_courses, ok, offerings_by_course, ordered_terms, r0, r1, slope_pct,
+    real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 )
 
 
@@ -88,6 +89,8 @@ def demand_analysis(db, department_id=None, course_id=None):
          "value": f"{top_growth['course'].split(' — ')[0]} ({fa_float(top_growth['growth_pct'], signed=True)}٪ در هر ترم)" if top_growth else "—"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+
     return ok(
         "demand-analysis", "تحلیل تقاضای دروس", 1,
         filters={"department_id": department_id, "course_id": course_id},
@@ -107,5 +110,5 @@ def demand_analysis(db, department_id=None, course_id=None):
             "دانشجویانی که اصلاً برای درس ثبت‌نام نکرده‌اند در داده دیده نمی‌شوند؛ «تقاضا» بر پایه رفتار ثبت‌نام است.",
             "همبستگی روند به معنای رابطه علّی نیست؛ تغییر برنامه درسی، شهریه یا قواعد ثبت‌نام می‌تواند روند را جابه‌جا کند.",
             "درس‌های با کمتر از سه ترم داده، طبقه‌بندی روند نمی‌شوند.",
-        ],
+        ] + extra_limits,
     )

@@ -7,6 +7,7 @@ import {
 import { useHttp } from "./http.js";
 import { useAuth } from "./auth.jsx";
 import { toFa } from "./ui.jsx";
+import DataSourcePanel from "./integration.jsx";
 import "./dashboard.css";
 
 const PALETTE = ["#0e6b63", "#1c5a96", "#d68910", "#c0392b", "#7d3c98", "#148f77", "#b9770e", "#2874a6", "#8e44ad", "#117864", "#5d6d7e"];
@@ -386,14 +387,18 @@ function SimulationPanel({ svc, catalog }) {
 function Overview({ go, services }) {
   const http = useHttp();
   const [data, setData] = useState(null);
+  const [basis, setBasis] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     http.get("/api/dashboard/overview").then(setData).catch((e) => setError(e.message));
+    http.get("/api/integration/basis").then(setBasis).catch(() => setBasis(null));
   }, [http]);
 
   if (error) return <div className="dj2-card dj2-error">{error}</div>;
   if (!data) return <div className="dj2-card dj2-hint">در حال بارگذاری نمای کلی…</div>;
+
+  const realBasis = basis?.mode === "barnameh_yar";
 
   return (
     <div>
@@ -404,6 +409,18 @@ function Overview({ go, services }) {
           <p className="dj2-head-desc">{data.note}</p>
         </div>
       </div>
+      {basis ? (
+        <div className={`dj2-basis ${realBasis ? "dj2-basis-real" : "dj2-basis-demo"}`}>
+          <span className="dj2-basis-dot" aria-hidden="true" />
+          <b>{realBasis ? "مبنای داده: واقعی" : "مبنای داده: نمونهٔ اولیه"}</b>
+          <span className="dj2-basis-text">
+            {realBasis
+              ? `همگام‌شده از برنامه‌یار۳۶۰ در ${toFa(basis.rebuilt_at || "—")} — ثبت‌نام برآوردی با نرخ پرشدگی ${toFa(Math.round((basis.fill_rate || 0.85) * 100))}٪؛ همهٔ تحلیل‌ها روی همین دیتای مبنا اجرا می‌شود.`
+              : "هنوز همگام‌سازی از برنامه‌یار۳۶۰ انجام نشده؛ پس از نخستین همگام‌سازی، دیتای مبنا و همهٔ تحلیل‌ها واقعی می‌شود."}
+          </span>
+          <button type="button" className="dj2-basis-btn" onClick={() => go("datasource")}>مدیریت منبع داده</button>
+        </div>
+      ) : null}
       <Kpis kpis={data.kpis} />
       {(data.charts || []).map((c, i) => <ChartBox key={c.key || i} spec={c} />)}
       <DataTable table={data.table} />
@@ -486,6 +503,10 @@ export default function Dashboard({ onBack }) {
               {s.title}
             </button>
           ))}
+          <button type="button" className={`dj2-nav-item ${active === "datasource" ? "dj2-nav-active" : ""}`} onClick={() => setActive("datasource")} title="همگام‌سازی با برنامه‌یار۳۶۰ و بازسازی دیتای مبنا">
+            <span className="dj2-nav-num">⇄</span>
+            منبع دادهٔ برنامه‌یار۳۶۰
+          </button>
         </nav>
         <div className="dj2-side-foot">
           <button type="button" className="dj2-btn dj2-btn-ghost" onClick={onBack}>بازگشت به سند رسمی</button>
@@ -495,7 +516,9 @@ export default function Dashboard({ onBack }) {
         </div>
       </aside>
       <main className="dj2-main">
-        {active === "overview" || !svcAllowed ? (
+        {active === "datasource" ? (
+          <DataSourcePanel />
+        ) : active === "overview" || !svcAllowed ? (
           <Overview go={setActive} services={allowedServices} />
         ) : svc.special === "simulation" ? (
           <SimulationPanel key={svc.id} svc={svc} catalog={catalog} />

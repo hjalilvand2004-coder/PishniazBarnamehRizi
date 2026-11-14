@@ -7,7 +7,7 @@
 خروجی «توصیه پشتیبان» است؛ تصمیم نهایی با گروه آموزشی و شورای مربوطه است.
 """
 from ..models import Course, Instructor, Offering
-from .base import EMPLOYMENT_FA, RANK_FA, fa_int, fa_pct, ok, r1, wavg
+from .base import EMPLOYMENT_FA, RANK_FA, fa_int, fa_pct, ok, r1, wavg, real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 
 
 def instructor_recommendation(db, course_id, top=5):
@@ -100,6 +100,10 @@ def instructor_recommendation(db, course_id, top=5):
         {"label": "دارای سابقه ارائه این درس", "value": len(with_history), "unit": "نفر"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = eval_missing_limitation(db, "رضایت و قبولی تاریخی")
+    if _m: extra_limits.append(_m)
+
     return ok(
         "instructor-recommendation", "توصیه استاد برای ارائه درس", 5,
         filters={"course_id": course_id, "top": top},
@@ -123,5 +127,5 @@ def instructor_recommendation(db, course_id, top=5):
             "وزن‌ها فرض مدیریتی قابل تنظیم‌اند و باید با سیاست گروه آموزشی هم‌راستا شوند.",
             "رضایت و قبولی تاریخی، تضمین عملکرد آینده نیست و به شرایط هر ترم وابسته است.",
             "معیارهای دیگر مانند بار پژوهشی، تنوع تدریس و توازن بار آموزشی گروه در امتیاز لحاظ نشده است.",
-        ],
+        ] + extra_limits,
     )

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..auth.deps import require_authenticated, require_service
 from ..db import get_db
+from ..integration.rebase import get_data_basis, is_real_basis
 from ..models import Course, Department, Instructor, Major, Offering, Student, Term
 from . import (
     capacity, cost, demand, dept_perf, distribution, efficiency, fail_rate,
@@ -110,6 +111,10 @@ def dashboard_overview(db: Session = Depends(get_db), _user=Depends(require_auth
     instructors_n = db.query(Instructor).count()
     courses_n = db.query(Course).filter(Course.active.is_(True)).count()
 
+    # مبنای داده: پس از همگام‌سازی با برنامه‌یار۳۶۰، دیتای مبنا واقعی است
+    basis = get_data_basis(db)
+    real = is_real_basis(db)
+
     trend = []
     for t in terms:
         offs = [o for o in all_offs if o.term_id == t.id]
@@ -140,12 +145,18 @@ def dashboard_overview(db: Session = Depends(get_db), _user=Depends(require_auth
         {"label": "اساتید", "value": instructors_n, "unit": "نفر"},
         {"label": "دروس فعال", "value": courses_n, "unit": "درس"},
         {"label": "ترم جاری", "value": latest.label if latest else "—"},
-        {"label": "پرشدن ظرفیت ترم جاری", "value": fill, "unit": "٪"},
+        {"label": "پرشدن ظرفیت ترم جاری", "value": fill, "unit": "٪",
+         "hint": "ثبت‌نام برآوردی (ظرفیت واقعی × نرخ پرشدگی)" if real else None},
         {"label": "رضایت ترم جاری", "value": sat, "unit": "از ۵"},
         {"label": "نرخ مردودی ترم جاری", "value": fail, "unit": "٪", "tone": "warn"},
         {"label": "محرومیت ثبت‌نام ترم جاری", "value": unmet, "unit": "نفر",
          "tone": "warn" if unmet else "good"},
     ]
+    if real:
+        # روی مبنای واقعی، شاخص‌های بدون منبع با شاخص‌های واقعی جایگزین می‌شوند
+        kpis = [k for k in kpis if k["label"] not in ("دانشجویان فعال", "نرخ مردودی ترم جاری")]
+        kpis.insert(0, {"label": "گروه‌های کلاس ترم جاری", "value": len(latest_offs), "unit": "گروه",
+                        "hint": "گروه‌های واقعی اجراشده در سوابق برنامه‌یار۳۶۰"})
 
     charts = [
         {
@@ -176,6 +187,34 @@ def dashboard_overview(db: Session = Depends(get_db), _user=Depends(require_auth
             "seriesLabels": {"value": "نفر محروم"},
         },
     ]
+    if real:
+        charts = [c for c in charts if c["key"] != "students"]  # پروندهٔ دانشجو در منبع نیست
+        # نمودار واقعی فعالیت برنامه‌ریزی از سوابق برنامه‌یار۳۶۰
+        from ..integration.models import ByScheduleHistory
+
+        hist_rows = db.query(
+            ByScheduleHistory.semester, ByScheduleHistory.semester_label, ByScheduleHistory.course_name
+        ).all()
+        act = {}
+        for sem, slabel, _c in hist_rows:
+            a = act.setdefault(sem, {"label": slabel or sem, "sessions": 0, "courses": set()})
+            a["sessions"] += 1
+            if _c:
+                a["courses"].add(_c)
+        real_activity = [{
+            "term": act[s]["label"],
+            "sessions": act[s]["sessions"],
+            "courses": len(act[s]["courses"]),
+        } for s in sorted(act)]
+        charts.append({
+            "key": "real-activity",
+            "type": "bar",
+            "title": "فعالیت واقعی برنامه‌ریزی در هر نیم‌سال (دادهٔ برنامه‌یار۳۶۰)",
+            "data": real_activity,
+            "xKey": "term",
+            "yKeys": ["sessions", "courses"],
+            "seriesLabels": {"sessions": "رکورد کلاس واقعی", "courses": "درس یکتای واقعی"},
+        })
 
     # جدول خلاصه دانشکده‌ها
     instr_by_dept = {}
@@ -216,7 +255,13 @@ def dashboard_overview(db: Session = Depends(get_db), _user=Depends(require_auth
             ],
             "rows": summary_rows,
         },
-        "note": "داده‌های نمونه سینتتیک برای نمایش قابلیت‌ها است؛ در استقرار واقعی، منبع داده رسمی سازمان متصل می‌شود.",
+        "note": (
+            "مبنای داده: همگام‌شده و بازسازی‌شده از برنامه‌یار۳۶۰ — ظرفیت‌ها، گروه‌های کلاس، اساتید و ترم‌ها واقعی‌اند؛ "
+            "ثبت‌نام برآوردی است و مؤلفه‌های بدون منبع (نظرسنجی، نتایج ارزشیابی، پروندهٔ دانشجو) صریحاً اعلام محدودیت می‌شوند."
+            if real
+            else "داده‌های نمونه سینتتیک برای نمایش قابلیت‌ها است؛ با نخستین همگام‌سازی از برنامه‌یار۳۶۰، دیتای مبنا واقعی می‌شود."
+        ),
+        "basis": basis,
         "disclaimer": "این داشبورد ابزار پشتیبان تصمیم‌گیری است و جایگزین اختیار قانونی و قضاوت حرفه‌ای مسئولان دانشگاه نیست.",
     }
 

@@ -142,3 +142,78 @@ def filtered_courses(db, department_id=None, course_id=None):
     if course_id:
         q = q.filter(Course.id == int(course_id))
     return q.all()
+
+
+# ---------------------------------------------------------------------------
+# مبنای داده و گیت‌های صداقت — وقتی دیتای مبنا از برنامه‌یار۳۶۰ بازسازی شده است،
+# سرویس‌هایی که منبع فیلدشان را ندارد به‌جای تولید عدد ساختگی، محدودیت را اعلام می‌کنند.
+# ---------------------------------------------------------------------------
+
+def get_data_basis(db):
+    """مبنای دادهٔ فعلی — barnameh_yar (واقعی) یا seed_demo (نمونهٔ اولیه)"""
+    from ..models import AppMeta
+    row = db.get(AppMeta, "data_basis")
+    if row and row.value and row.value.get("mode") == "barnameh_yar":
+        return row.value
+    return {"mode": "seed_demo", "source": "دادهٔ نمونهٔ اولیه (قبل از نخستین همگام‌سازی)"}
+
+
+def is_real_basis(db):
+    return get_data_basis(db).get("mode") == "barnameh_yar"
+
+
+def has_evaluation_data(db):
+    """آیا نتایج نظرسنجی در دیتای مبنا وجود دارد؟"""
+    from ..models import Offering
+    return db.query(Offering.id).filter(Offering.evaluation_count > 0).first() is not None
+
+
+def has_result_data(db):
+    """آیا نتایج ارزشیابی نهایی (قبولی/مردودی یا نمره) در دیتای مبنا وجود دارد؟"""
+    from ..models import Offering
+    return (
+        db.query(Offering.id).filter(Offering.failed > 0).first() is not None
+        or db.query(Offering.id).filter(Offering.avg_grade.isnot(None)).first() is not None
+    )
+
+
+def has_student_data(db):
+    from ..models import Student
+    return db.query(Student.id).first() is not None
+
+
+def real_basis_limitations(db):
+    """محدودیت‌های مشترک مبنای دادهٔ واقعی برای افزودن به خروجی سرویس‌ها"""
+    basis = get_data_basis(db)
+    if basis.get("mode") != "barnameh_yar":
+        return []
+    fill = basis.get("fill_rate", 0.85)
+    return [
+        f"مبنای داده: همگام‌شده از {basis.get('source', 'برنامه‌یار۳۶۰')} در {basis.get('rebuilt_at', '—')} — "
+        "ظرفیت‌ها، گروه‌های اجراشده، اساتید و ترم‌ها واقعی‌اند.",
+        f"ثبت‌نام‌ها برآوردی است (ظرفیت × نرخ پرشدگی {fill:.0%}) چون منبع ثبت‌نام واقعی ندارد؛ "
+        "برای دقیق‌سازی، نرخ واقعی را با متغیر DANESHJO360_FILL_RATE تنظیم کنید.",
+    ]
+
+
+def eval_missing_limitation(db, what: str):
+    """پیام محدودیت وقتی نتایج نظرسنجی در منبع وجود ندارد"""
+    if is_real_basis(db) and not has_evaluation_data(db):
+        return (f"«{what}» در منبع برنامه‌یار۳۶۰ ثبت نشده است؛ این مؤلفه بدون تولید عدد ساختگی "
+                "کنار گذاشته می‌شود و با ثبت نظرسنجی‌ها به‌طور خودکار فعال می‌گردد.")
+    return None
+
+
+def result_missing_limitation(db, what: str = "نتایج قبولی/مردودی نهایی"):
+    """پیام محدودیت وقتی نتایج ارزشیابی نهایی در منبع وجود ندارد"""
+    if is_real_basis(db) and not has_result_data(db):
+        return f"{what} در منبع برنامه‌یار۳۶۰ موجود نیست؛ این تحلیل نیازمند ثبت نتایج ارزشیابی نهایی است."
+    return None
+
+
+def student_missing_limitation(db):
+    """پیام محدودیت وقتی پروندهٔ دانشجویی در منبع وجود ندارد"""
+    if is_real_basis(db) and not has_student_data(db):
+        return ("پروندهٔ دانشجویی (بدون هویت) در منبع برنامه‌یار۳۶۰ موجود نیست؛ این تحلیل نیازمند "
+                "بارگذاری دادهٔ جمعیت دانشجویی است و با دادهٔ برنامه‌ریزی منبع قابل استنتاج نیست.")
+    return None

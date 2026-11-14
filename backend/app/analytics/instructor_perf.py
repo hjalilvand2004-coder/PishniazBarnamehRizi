@@ -10,6 +10,7 @@
 from ..models import Department, Instructor, Offering
 from .base import (
     EMPLOYMENT_FA, MIN_EVAL_SAMPLE, RANK_FA, ok, r1, wavg,
+    real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 )
 
 
@@ -79,6 +80,10 @@ def instructor_performance(db, department_id=None, instructor_id=None, min_sampl
         {"label": "آستانه کفایت نمونه", "value": min_sample, "unit": "پاسخ", "hint": "پارامتر قابل تنظیم"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = eval_missing_limitation(db, "رضایت نظرسنجی")
+    if _m: extra_limits.append(_m)
+
     return ok(
         "instructor-performance", "تحلیل عملکرد اساتید", 4,
         filters={"department_id": department_id, "instructor_id": instructor_id, "min_sample": min_sample},
@@ -103,5 +108,5 @@ def instructor_performance(db, department_id=None, instructor_id=None, min_sampl
             "همبستگی شاخص‌ها به معنای رابطه علّی با عملکرد استاد نیست.",
             f"اساتیدی که مجموع پاسخ‌های نظرسنجی آن‌ها کمتر از {min_sample} است تفسیر نمی‌شوند؛ ستون «کفایت نمونه» را رعایت کنید.",
             "این خروجی برای رتبه‌بندی تنبیهی یا تصمیم‌های انضباطی طراحی نشده است؛ کاربرد پیشنهادی: خودارزیابی و پشتیبانی توسعه حرفه‌ای.",
-        ],
+        ] + extra_limits,
     )

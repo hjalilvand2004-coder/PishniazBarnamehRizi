@@ -8,7 +8,7 @@
 import math
 
 from ..models import Department, Instructor, Major, Student
-from .base import ADJUNCT_FTE, DEFAULT_TARGET_RATIO, fa_int, ok, r1
+from .base import ADJUNCT_FTE, DEFAULT_TARGET_RATIO, fa_int, ok, r1, real_basis_limitations, eval_missing_limitation, result_missing_limitation, student_missing_limitation
 
 
 def ratio_optimization(db, target=DEFAULT_TARGET_RATIO):
@@ -74,6 +74,10 @@ def ratio_optimization(db, target=DEFAULT_TARGET_RATIO):
          "value": f"{rows[0]['department']} ({fa_int(rows[0]['ratio'])})" if rows else "—"},
     ]
 
+    extra_limits = list(real_basis_limitations(db))
+    _m = student_missing_limitation(db)
+    if _m: extra_limits.append(_m)
+
     return ok(
         "ratio-optimization", "بهینه‌سازی نسبت استاد به دانشجو", 9,
         filters={"target": target},
@@ -95,5 +99,5 @@ def ratio_optimization(db, target=DEFAULT_TARGET_RATIO):
             "یکنواخت‌بودن نسبت هدف برای همه رشته‌ها دقیق نیست؛ رشته‌های عملی/آزمایشگاهی نسبت پایین‌تری لازم دارند.",
             "«کمبود برآوردی» پیشنهاد برنامه‌ریزی است، نه مجوز استخدام؛ تصمیم با مراجع قانونی ذی‌صلاح است.",
             "جمعیت دانشجویی بر اساس وضعیت ثبت‌نامی جاری است و پیک تقاضای درسی هر ترم ممکن است متفاوت باشد.",
-        ],
+        ] + extra_limits,
     )

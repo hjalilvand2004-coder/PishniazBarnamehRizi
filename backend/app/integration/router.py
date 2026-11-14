@@ -15,7 +15,8 @@ from ..auth.deps import require_authenticated
 from ..db import get_db
 from . import config, insights, initial_plan, sync
 from .client import IntegrationError, shared_client
-from .models import ByInstructor, ByRoom, ByScheduleHistory, ByTermCourse
+from .models import ByInstructor, ByOfferedCourse, ByRoom, ByScheduleHistory, ByTermCourse
+from .rebase import get_data_basis, rebase_from_synced
 
 SYNC_ROLES = {"sysadmin", "edu_manager"}
 PUSH_ROLES = {"sysadmin"}
@@ -76,6 +77,23 @@ def run_sync(source: str, db: Session = Depends(get_db), user=Depends(require_au
         return sync.sync_source(db, source)
     except IntegrationError as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.get("/basis")
+def basis(db: Session = Depends(get_db), user=Depends(require_authenticated)):
+    """مبنای دادهٔ فعلی سامانه — برای بنر داشبورد و شفافیت تحلیل‌ها"""
+    return get_data_basis(db)
+
+
+@router.post("/rebase")
+def run_rebase(db: Session = Depends(get_db), user=Depends(require_authenticated)):
+    """بازسازی دیتای مبنا از دادهٔ همگام‌شدهٔ برنامه‌یار۳۶۰ — ادمین سیستم و مدیرآموزش
+
+    کل جداول مبنای تحلیل (دانشکده، درس، استاد، ترم، ارائه) از آینهٔ واقعی برنامه‌یار
+    بازسازی می‌شود؛ پس از هر همگام‌سازی کامل این کار خودکار انجام می‌شود.
+    """
+    _require_role(user, SYNC_ROLES, "بازسازی دیتای مبنا از برنامه‌یار۳۶۰")
+    return rebase_from_synced(db)
 
 
 @router.get("/term-courses")
