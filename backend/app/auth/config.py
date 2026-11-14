@@ -17,14 +17,18 @@ CLIENT_ID = os.getenv("DANESHJO360_SSO_CLIENT_ID", "daneshjo360")    # کلای�
 APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY") or CLIENT_ID
 APP_NAME = "دانشجو۳۶۰"
 
+# مبدأ عمومی استقرار سامانه — پیش‌فرض: همان میزبان پرتال با پورت ۸۰۸۷
+# همین مقدار مبنای redirect_uri و post_logout_redirect_uri ثبت‌شده در پرتال است.
+PUBLIC_ORIGIN = os.getenv("DANESHJO360_PUBLIC_ORIGIN", "http://188.212.96.235:8087")
+
 # redirect_uri باید کاراکتر به کاراکتر با مقدار ثبت‌شده در سرور SSO یکی باشد
 SSO_REDIRECT_URI = os.getenv(
     "DANESHJO360_SSO_REDIRECT_URI",
-    "http://127.0.0.1:8000/auth/sso/callback",
+    PUBLIC_ORIGIN.rstrip("/") + "/auth/sso/callback",
 )
 SSO_POST_LOGOUT_URI = os.getenv(
     "DANESHJO360_SSO_POST_LOGOUT_URI",
-    "http://127.0.0.1:8000/login?logout=1",
+    PUBLIC_ORIGIN.rstrip("/") + "/login?logout=1",
 )
 
 # نقش مورد نیاز برای ورود به سامانه (تخصیص توسط مدیر SSO در پنل کاربران)

@@ -13,7 +13,7 @@ if errorlevel 1 (
 echo Nasb vabastegi-ha...
 python -m pip install -q -r requirements.txt
 
-echo Ejraye samane rooye http://127.0.0.1:8000  (baraye tavaqof: Ctrl+C)
-start "" cmd /c "timeout /t 4 /nobreak >nul & start http://127.0.0.1:8000"
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+echo Ejraye samane rooye http://127.0.0.1:8087  (baraye tavaqof: Ctrl+C)
+start "" cmd /c "timeout /t 4 /nobreak >nul & start http://127.0.0.1:8087"
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8087
 pause
