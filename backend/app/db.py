@@ -11,6 +11,7 @@
 برای بازتولید داده نمونه:  DANESHJO360_RESEED=1
 """
 import os
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -32,6 +33,25 @@ def _resolve_url():
 
 
 SQLALCHEMY_URL = _resolve_url()
+
+
+def _ensure_sqlite_dir() -> None:
+    """ساخت پوشهٔ والد فایل SQLite پیش از نخستین اتصال — اجرای پرتیبل حتی بدون
+    پوشهٔ data هم بالا می‌آید (پیشگیری از خطای unable to open database file)."""
+    if not SQLALCHEMY_URL.startswith("sqlite"):
+        return
+    rest = SQLALCHEMY_URL[len("sqlite:///"):]
+    if not rest or rest.startswith(":memory:") or rest.startswith("file:"):
+        return
+    try:
+        parent = Path(rest).parent
+        if str(parent) not in ("", "."):
+            parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass  # مسیر معیوب را sqlite خودش با پیام واضح گزارش می‌کند
+
+
+_ensure_sqlite_dir()
 
 connect_args = {"check_same_thread": False} if SQLALCHEMY_URL.startswith("sqlite") else {}
 engine = create_engine(SQLALCHEMY_URL, connect_args=connect_args, future=True)
