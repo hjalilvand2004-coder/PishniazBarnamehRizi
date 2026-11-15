@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from ..db import SessionLocal
 from . import config
 from .client import IntegrationError, shared_client
-from .models import ByInstructor, ByOfferedCourse, ByRoom, ByScheduleHistory, BySyncLog, ByTermCourse
+from .models import ByInstructor, ByOfferedCourse, ByRoom, ByScheduleHistory, BySyncLog, ByTermCourse, ByUniqueCourse
 
 FA_DIGITS = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 TERM_WORDS = {"یک": 1, "دو": 2, "سه": 3, "چهار": 4, "پنج": 5, "شش": 6, "هفت": 7, "هشت": 8}
@@ -61,6 +61,18 @@ def _to_str(v) -> str | None:
 # ---------------------------------------------------------------------------
 # نگاشت رکورد مبدأ → رکورد آینه
 # ---------------------------------------------------------------------------
+
+def map_unique_course(row: dict, now: int) -> ByUniqueCourse:
+    return ByUniqueCourse(
+        external_id=_to_int(row.get("id")) or 0,
+        code=None if row.get("code") in (None, "", "یافت نشد") else _to_str(row.get("code")),
+        title=_to_str(row.get("title")) or "بدون عنوان",
+        status=_to_str(row.get("status")),
+        group_name=_to_str(row.get("group")),
+        estimated_capacity=_to_int(row.get("estimated_capacity")),
+        synced_at=now,
+    )
+
 
 def map_term_course(row: dict, now: int) -> ByTermCourse:
     return ByTermCourse(
@@ -160,6 +172,7 @@ def map_offered_course(row: dict, now: int) -> ByOfferedCourse:
 
 
 MAPPERS = {
+    "unique_courses": (ByUniqueCourse, map_unique_course),
     "term_courses": (ByTermCourse, map_term_course),
     "schedule_history": (ByScheduleHistory, map_schedule_history),
     "rooms": (ByRoom, map_room),
@@ -294,6 +307,7 @@ def last_syncs(db: Session) -> dict[str, dict]:
 
 def local_counts(db: Session) -> dict[str, int]:
     return {
+        "unique_courses": db.query(ByUniqueCourse).count(),
         "term_courses": db.query(ByTermCourse).count(),
         "schedule_history": db.query(ByScheduleHistory).count(),
         "rooms": db.query(ByRoom).count(),

@@ -26,6 +26,11 @@ TOKEN_MARGIN_SECONDS = 60
 
 # منابع همگام‌سازی — مبنای «برنامه‌ریزی واقعی» در برنامه‌یار۳۶۰
 SOURCES = {
+    "unique_courses": {
+        "path": "/api/courses/unique",
+        "label": "دروس یکتا (کاتالوگ کد یکتا)",
+        "remote_id": "id",
+    },
     "term_courses": {
         "path": "/api/term-courses/",
         "label": "دروس ترمیک",
@@ -53,8 +58,8 @@ SOURCES = {
     },
 }
 
-# منابعی که به‌صورت کامل آینه می‌شوند (دروس ترمیک، سوابق، اتاق‌ها، اساتید، دروس ارائه)
-MIRROR_SOURCES = ["term_courses", "schedule_history", "rooms", "instructors", "offered_courses"]
+# منابعی که به‌صورت کامل آینه می‌شوند (دروس یکتا، دروس ترمیک، سوابق، اتاق‌ها، اساتید، دروس ارائه)
+MIRROR_SOURCES = ["unique_courses", "term_courses", "schedule_history", "rooms", "instructors", "offered_courses"]
 
 # برآورد پرشدگی کلاس — منبع برنامه‌یار «ظرفیت برنامه‌ریزی‌شده» دارد نه ثبت‌نام واقعی؛
 # ثبت‌نام مبنای تحلیل با این نرخ برآورد می‌شود و در همهٔ خروجی‌ها صریحاً اعلام می‌گردد.

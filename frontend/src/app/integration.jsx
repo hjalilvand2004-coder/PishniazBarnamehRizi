@@ -15,6 +15,7 @@ const PALETTE = ["#0e6b63", "#1c5a96", "#d68910", "#c0392b", "#7d3c98", "#148f77
 const nf = (v, dec = 0) => (v == null || v === "" ? "—" : new Intl.NumberFormat("fa-IR", { maximumFractionDigits: dec }).format(v));
 
 const SOURCES = [
+  { key: "unique_courses", label: "دروس یکتا", desc: "کاتالوگ رسمی کد یکتای درس مبدأ — مرجع تطبیق کدها" },
   { key: "term_courses", label: "دروس ترمیک", desc: "کاتالوگ طرح درسی همهٔ مقاطع (سرویس دروس ترمیک)" },
   { key: "schedule_history", label: "سوابق برنامه‌ریزی", desc: "کلاس‌های اجراشدهٔ ترم‌های گذشته با روز/ساعت/اتاق/استاد" },
   { key: "rooms", label: "کلاس‌ها و اتاق‌های درس", desc: "فهرست واقعی اتاق‌ها و سایت‌ها با ظرفیت" },

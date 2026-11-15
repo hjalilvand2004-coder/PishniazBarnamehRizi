@@ -36,6 +36,24 @@ class ByTermCourse(Base):
     synced_at = Column(Integer, nullable=False, default=0)
 
 
+class ByUniqueCourse(Base):
+    """آینهٔ سرویس «دروس یکتا» برنامه‌یار۳۶۰ — کاتالوگ رسمی کد یکتای درس
+
+    مبدأ کد یکتا را در این سرویس نگه می‌دارد؛ ردیف‌های دروس ترمیک که
+    «یافت نشد» دارند از همین کاتالوگ (تطبیق عنوان) کد معتبر می‌گیرند.
+    """
+    __tablename__ = "by_unique_courses"
+
+    id = Column(Integer, primary_key=True)          # کلید محلی
+    external_id = Column(Integer, nullable=False, index=True)  # id در برنامه‌یار
+    code = Column(String(32), nullable=True, index=True)        # کد درس یکتا
+    title = Column(String(200), nullable=False)                 # عنوان درس یکتا
+    status = Column(String(32), nullable=True)                  # فعال / غیرفعال
+    group_name = Column(String(120), nullable=True)             # گروه آموزشی
+    estimated_capacity = Column(Integer, nullable=True)         # برآورد ظرفیت
+    synced_at = Column(Integer, nullable=False, default=0)
+
+
 class ByScheduleHistory(Base):
     """آینهٔ سرویس «سوابق برنامه‌ریزی» — کلاس‌های اجرا‌شده در ترم‌های گذشته"""
     __tablename__ = "by_schedule_history"

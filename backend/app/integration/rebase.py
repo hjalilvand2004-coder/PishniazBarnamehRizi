@@ -23,8 +23,8 @@ from ..analytics.base import (
     real_basis_limitations, eval_missing_limitation, result_missing_limitation,  # noqa: F401 (بازصادری)
 )
 from . import config
-from .initial_plan import normalize_title
-from .models import ByInstructor, ByOfferedCourse, ByRoom, ByScheduleHistory, ByTermCourse
+from .initial_plan import loose_key, normalize_title
+from .models import ByInstructor, ByOfferedCourse, ByRoom, ByScheduleHistory, ByTermCourse, ByUniqueCourse
 
 # نگاشت مقطع دروس ترمیک به مقطع داخلی
 DEGREE_MAP = {"پیوسته": "bsc", "ناپیوسته": "bsc"}
@@ -99,6 +99,7 @@ def rebase_from_synced(db: Session, *, fill_rate: float | None = None) -> dict:
     history = db.query(ByScheduleHistory).all()
     term_courses = db.query(ByTermCourse).all()
     offered = db.query(ByOfferedCourse).all()
+    unique_src = db.query(ByUniqueCourse).all()
     instructors_src = db.query(ByInstructor).all()
     rooms_src = db.query(ByRoom).all()
 
@@ -152,7 +153,33 @@ def rebase_from_synced(db: Session, *, fill_rate: float | None = None) -> dict:
     db.flush()
     term_ids = {sem: terms[code].id for sem, code in sem_to_code.items()}
 
-    # ---------- ۴) دروس (کاتالوگ دروس ترمیک + عناوین واقعی سوابق + غنی‌سازی از دروس ارائه)
+    # ---------- ۴) دروس (کاتالوگ دروس ترمیک + کاتالوگ «دروس یکتا» + عناوین واقعی سوابق + غنی‌سازی از دروس ارائه)
+    # کاتالوگ «دروس یکتا» مبدأ مرجع رسمی کد یکتاست؛ ردیف‌های دروس ترمیک با
+    # «یافت نشد» از این کاتالوگ (تطبیق عنوان) کد معتبر می‌گیرند و کد موقت BY
+    # فقط برای مواردی می‌ماند که در هیچ سرویس مبدأ کد نداشته باشند.
+    unique_by_title: dict[str, str] = {}
+    for u in unique_src:
+        n = normalize_title(u.title)
+        if n and u.code and n not in unique_by_title:
+            unique_by_title[n] = u.code
+
+    def _unique_singletons(keyfn) -> dict[str, str]:
+        """کد یکتا فقط برای کلیدهایی که در کاتالوگ «دروس یکتا» یکتا هستند"""
+        seen: dict[str, tuple[str, int]] = {}
+        for u in unique_src:
+            if not u.code:
+                continue
+            k = keyfn(u.title)
+            if not k:
+                continue
+            prev = seen.get(k)
+            seen[k] = (u.code, (prev[1] + 1) if prev else 1)
+        return {k: c for k, (c, n) in seen.items() if n == 1}
+
+    # تطبیق شل: تایپ‌ها و تفاوت نیم‌فاصله/فاصله/پسوند عددی بین سرویس‌های مبدأ
+    unique_loose = _unique_singletons(loose_key)
+    unique_loose_no = _unique_singletons(lambda t: loose_key(t, strip_trailing_no=True))
+
     offered_by_title: dict[str, ByOfferedCourse] = {}
     for oc in offered:
         for key in (oc.offered_title, oc.unique_title):
@@ -160,47 +187,69 @@ def rebase_from_synced(db: Session, *, fill_rate: float | None = None) -> dict:
             if n and n not in offered_by_title:
                 offered_by_title[n] = oc
 
-    courses: dict[str, Course] = {}          # normalized title → Course
+    # واحدها/مقطع/نوع درس از کاتالوگ ترمیک (اولین رکورد دارای واحد برای هر عنوان)
+    term_meta: dict[str, tuple] = {}
+    for t in term_courses:
+        n = normalize_title(t.course_name)
+        if n and n not in term_meta and (t.units or t.level or t.course_type):
+            term_meta[n] = (t.units, t.level, t.course_type)
+
+    courses: dict[str, Course] = {}          # normalized title → Course (مترادف‌ها هم)
+    catalog_by_code: dict[str, Course] = {}  # کد یکتای کاتالوگ → درس مرجع
     course_objs: list[Course] = []
     used_codes: set[str] = set()
 
     def add_course(title: str, *, code: str | None, units: int | None, level: str | None,
                    ctype: str | None) -> Course:
         n = normalize_title(title)
+        hit = courses.get(n)
+        if hit is not None:
+            return hit
         oc = offered_by_title.get(n)
         hours = (oc.theoretical_hours or 0) + (oc.practical_hours or 0) if oc else 0
-        cand = (code or (oc.unique_code if oc else None) or f"BY{len(course_objs) + 1:04d}")[:16]
+        cand = (code or unique_by_title.get(n) or (oc.unique_code if oc else None)
+                or unique_loose.get(loose_key(title)) or unique_loose_no.get(loose_key(title, strip_trailing_no=True)))
+        if cand:
+            # ادغام مترادف‌ها: هر عنوانی که به کد کاتالوگ می‌رسد همان درس مرجع است
+            # (واریانت‌های نگارشی مبدأ درس تکراری نمی‌سازند)
+            ref = catalog_by_code.get(str(cand)[:16])
+            if ref is not None:
+                courses[n] = ref
+                return ref
+        if not cand:
+            cand = f"BY{len(course_objs) + 1:04d}"
         # کاتالوگ مبدأ ممکن است یک کد یکتا را بین دو عنوان به‌اشتراک بگذارد؛ تداخل با پسوند حل می‌شود
-        if cand in used_codes:
-            cand = f"{cand[:12]}x{len(course_objs) + 1:03d}"
-        used_codes.add(cand)
+        if str(cand) in used_codes:
+            cand = f"{str(cand)[:12]}x{len(course_objs) + 1:03d}"
+        used_codes.add(str(cand))
+        u, lv, ct = term_meta.get(n, (units, level, ctype))
         c = Course(
-            code=cand,
+            code=str(cand)[:16],
             title=title[:160],
-            credits=int(units or hours or 3),
-            degree=DEGREE_MAP.get(_level_base(level), "bsc"),
+            credits=int(u or hours or 3),
+            degree=DEGREE_MAP.get(_level_base(lv), "bsc"),
             department_id=default_dept.id,
-            major_id=major_ids.get(_level_base(level)),
-            tags=[ctype] + title_tokens(title) if ctype else title_tokens(title),
+            major_id=major_ids.get(_level_base(lv)),
+            tags=[ct] + title_tokens(title) if ct else title_tokens(title),
             active=True,
         )
         course_objs.append(c)
         courses[n] = c
         db.add(c)
+        if not str(c.code).startswith("BY"):
+            catalog_by_code[str(c.code)] = c
         return c
 
-    # کاتالوگ رسمی دروس ترمیک — ترجیح کد یکتای معتبر
-    for t in sorted(term_courses, key=lambda x: (x.unique_course_code not in (None, ""), x.external_id)):
-        n = normalize_title(t.course_name)
-        if n in courses:
-            continue
+    # ۴-۱) درس‌های مرجع کاتالوگ «دروس یکتا» — کد یکتای رسمی مبدأ
+    for u in sorted(unique_src, key=lambda x: x.external_id):
+        if u.code:
+            add_course(u.title, code=u.code, units=None, level=None, ctype=None)
+    # ۴-۲) کاتالوگ دروس ترمیک — عناوینی که به کاتالوگ یکتا نرسیدند درس مستقل می‌شوند
+    for t in sorted(term_courses, key=lambda x: x.external_id):
         add_course(t.course_name, code=t.unique_course_code, units=t.units, level=t.level, ctype=t.course_type)
-
-    # عناوین تدریس‌شدهٔ واقعی سوابق که در کاتالوگ نیستند
+    # ۴-۳) عناوین تدریس‌شدهٔ واقعی سوابق که در هیچ کاتالوگی نیستند
     for title in sorted({h.course_name for h in history}):
-        n = normalize_title(title)
-        if n and n not in courses:
-            add_course(title, code=None, units=None, level="نامشخص", ctype=None)
+        add_course(title, code=None, units=None, level="نامشخص", ctype=None)
     db.flush()
     course_ids = {n: c.id for n, c in courses.items()}
 

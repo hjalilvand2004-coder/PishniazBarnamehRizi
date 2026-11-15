@@ -22,7 +22,8 @@ from ..analytics.recommend import instructor_recommendation
 from ..models import Course, Offering, Term
 from .client import IntegrationError, shared_client
 
-ZERO_WIDTH = re.compile(r"[\u200b\u200c\u200f\u202a-\u202e]")
+# نویسه‌های نامرئی/کنترلی که تطبیق عنوان را می‌شکنند (نمونهٔ واقعی مبدأ: «نرم‎افزار» با U+200E)
+ZERO_WIDTH = re.compile(r"[\u200b\u200c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
 
 
 def normalize_title(title: str | None) -> str:
@@ -33,6 +34,35 @@ def normalize_title(title: str | None) -> str:
     s = s.replace("ي", "ی").replace("ك", "ک").replace("ٔ", "")
     s = re.sub(r"\s+", " ", s).strip().lower()
     return s
+
+
+FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
+
+
+def loose_key(title: str | None, *, strip_trailing_no: bool = False) -> str:
+    """کلید شل تطبیق عنوان — برای پوشش تفاوت‌های نگارشی سرویس‌های مبدأ
+
+    علاوه بر normalize_title: نشانهٔ جمع «های/ها» (جدا یا چسبیده)، حرف «ء» و
+    همهٔ فاصله‌ها حذف می‌شوند تا نمونه‌های واقعی مبدأ مثل «زبان های/زبان‌های»،
+    «منط قی/منطقی»، «نرم افراز/نرم‌افزار»، «اشیا/اشیاء»، «پایگاه داده ها/
+    پایگاه داده» و «ریزپردازنده 1/ریزپردازنده» تطبیق یابند. تطبیق فقط با
+    برابری دقیق این کلید انجام می‌شود (بدون حدس فازی) و کلیدهای مبهم در سمت
+    کاتالوگ نادیده گرفته می‌شوند.
+    """
+    s = normalize_title(title).replace("ء", "")
+    toks = []
+    for t in s.split():
+        if t in ("های", "ها"):
+            continue
+        if len(t) > 3 and t.endswith("های"):
+            t = t[:-3]
+        elif len(t) > 2 and t.endswith("ها"):
+            t = t[:-2]
+        toks.append(t)
+    if strip_trailing_no:
+        while toks and (toks[-1] in FA_DIGITS or toks[-1].isdigit()):
+            toks.pop()
+    return "".join(toks)
 
 
 def next_term(latest: Term) -> tuple[str, str]:
