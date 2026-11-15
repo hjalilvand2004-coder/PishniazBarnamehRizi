@@ -53,12 +53,11 @@ export default function SettingsPanel() {
 
   const set = (k) => (e) => setValues((p) => ({ ...p, [k]: e.target.value }));
 
-  const save = async (keys) => {
+  const save = async (patch) => {
+    // patch: آبجکت {کلید: مقدار} — صراحتاً پاس داده می‌شود تا closure کهنه مقدار اشتباه نفرستد
     setSaving(true);
     setFlash(null);
     try {
-      const patch = {};
-      keys.forEach((k) => { patch[k] = values[k]; });
       const d = await http.put("/api/settings", patch);
       const v = {}, m = {};
       Object.entries(d).forEach(([k, item]) => { v[k] = item.value; m[k] = item; });
@@ -121,10 +120,10 @@ export default function SettingsPanel() {
             <small className="st-hint">{meta[key].hint}</small>
           </label>
           <div className="st-actions">
-            <button type="button" className="dj2-tab st-save" disabled={saving} onClick={() => save([key])}>{saving ? "…" : "ذخیره"}</button>
+            <button type="button" className="dj2-tab st-save" disabled={saving} onClick={() => save({ [key]: values[key] })}>{saving ? "…" : "ذخیره"}</button>
             <button type="button" className="dj2-tab st-test" disabled={testing === testKind} onClick={() => test(testKind, key)}>{testing === testKind ? "در حال تست…" : testLabel}</button>
             {meta[key].overridden ? (
-              <button type="button" className="dj2-tab st-reset" onClick={() => { setValues((p) => ({ ...p, [key]: meta[key].default })); save([key]); }}>بازگشت به پیش‌فرض</button>
+              <button type="button" className="dj2-tab st-reset" onClick={() => save({ [key]: "" })}>بازگشت به پیش‌فرض</button>
             ) : null}
           </div>
         </div>

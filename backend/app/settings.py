@@ -43,7 +43,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 FIELDS = {
     "barnameh_base_url": {
         "label": "نشانی پایهٔ برنامه‌یار۳۶۰",
-        "hint": "مثال: http://188.212.96.235:8087 — مبنای همگام‌سازی و بازسازی دیتای مبنا",
+        "hint": "پورت استاندارد برنامه‌یار۳۶۰: ۸۰۸۳ — مبنای همگام‌سازی و بازسازی دیتای مبنا",
         "default": lambda: by_config.BASE_URL,
         "kind": "url",
     },
