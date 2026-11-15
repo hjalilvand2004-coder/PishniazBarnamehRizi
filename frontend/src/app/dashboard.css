@@ -1,4 +1,4 @@
-/* داشبورد تحلیلی دانشجو۳۶۰ — سبک مستقل با پیشوند dj2 (هماهنگ با پالت سند) */
+/* داشبورد تحلیلی مدیریار۳۶۰ — سبک مستقل با پیشوند dj2 (هماهنگ با پالت سند) */
 
 :root {
   --dj2-primary: #0e3a4d;
@@ -501,3 +501,16 @@
 .st-reg td { border-bottom: 1px solid #f0f3f6; padding: 8px 10px; font-size: 12px; }
 .st-reg-label { color: #5b6b7b; font-weight: 700; width: 240px; }
 .st-reg-val { color: #1f2d3d; word-break: break-all; }
+
+/* --- جزئیات موارد تعارض هر چک کیفیت داده --- */
+.q-head-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.q-det-toggle { margin-right: 10px; border: 1px solid #d7e0e8; background: #f7fafc; color: #1c5a96; border-radius: 999px; padding: 4px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.q-det-toggle:hover { background: #eaf2fb; }
+.q-detail-row > td { background: #fbfdfe; padding: 0 10px 12px !important; }
+.q-det { padding-top: 10px; }
+.q-det-table { background: #fff; border: 1px solid #e2e8ee; border-radius: 8px; margin-bottom: 8px; }
+.q-det-table th { background: #f4f7fa; font-size: 11.5px; }
+.q-det-code { font-family: monospace; font-size: 12px; white-space: nowrap; color: #33475b; }
+.q-det-note-cell { color: #7b8a99; font-size: 11.5px; line-height: 1.8; }
+.q-det-note { color: #b9770e; font-size: 11.5px; margin: 4px 0 8px; }
+.q-det-csv { font-size: 11.5px; padding: 5px 14px; }

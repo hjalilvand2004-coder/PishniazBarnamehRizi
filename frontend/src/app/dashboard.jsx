@@ -1,4 +1,4 @@
-// داشبورد تحلیلی سامانه دانشجو۳۶۰ — موتور ۱۱ سرویس روی پایگاه داده واقعی
+// داشبورد تحلیلی سامانه مدیریار۳۶۰ — موتور ۱۱ سرویس روی پایگاه داده واقعی
 import { useCallback, useEffect, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart,
@@ -487,7 +487,7 @@ export default function Dashboard({ onBack }) {
         <button type="button" className="dj2-brand" onClick={onBack} title="بازگشت به سند رسمی">
           <span className="dj2-logo">۳۶۰</span>
           <span>
-            <span className="dj2-brand-name">دانشجو۳۶۰</span>
+            <span className="dj2-brand-name">مدیریار۳۶۰</span>
             <span className="dj2-brand-sub">داشبورد تحلیلی مدیریت آموزشی</span>
           </span>
         </button>

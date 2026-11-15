@@ -54,7 +54,7 @@ def integration_status(db: Session = Depends(get_db), user=Depends(require_authe
         "enabled": config.ENABLED,
         "base_url": config.BASE_URL,
         "source_system": "برنامه‌یار۳۶۰ — سامانه هوشمند برنامه‌ریزی درسی (مبنای برنامه‌ریزی اجرایی)",
-        "this_system": "دانشجو۳۶۰ — مبنای برنامه‌ریزی اولیه",
+        "this_system": "مدیریار۳۶۰ — مبنای برنامه‌ریزی اولیه",
         "remote": remote,
         "error": error,
         "last_syncs": sync.last_syncs(db),
@@ -198,7 +198,7 @@ def integration_insights(db: Session = Depends(get_db), user=Depends(require_aut
 
 @router.get("/initial-plan")
 def get_initial_plan(db: Session = Depends(get_db), user=Depends(require_authenticated)):
-    """برنامه‌ریزی اولیهٔ نیم‌سال بعد — خروجی دانشجو۳۶۰ برای برنامه‌یار۳۶۰"""
+    """برنامه‌ریزی اولیهٔ نیم‌سال بعد — خروجی مدیریار۳۶۰ برای برنامه‌یار۳۶۰"""
     plan = initial_plan.build_initial_plan(db)
     if not plan.get("ready"):
         return plan

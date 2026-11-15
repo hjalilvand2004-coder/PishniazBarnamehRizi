@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title Daneshjo360 - Samane Modiriat Amoozeshi
+title ModirYar360 - Samane Modiriat Amoozeshi
 cd /d "%~dp0..\backend"
 
 where python >nul 2>nul

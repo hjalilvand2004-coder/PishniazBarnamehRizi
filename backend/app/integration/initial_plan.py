@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""مبنای برنامه‌ریزی اولیه — خروجی دانشجو۳۶۰ برای ورود به برنامه‌یار۳۶۰
+"""مبنای برنامه‌ریزی اولیه — خروجی مدیریار۳۶۰ برای ورود به برنامه‌یار۳۶۰
 
 قرارداد معماری (به انتخاب کاربر):
-  * دانشجو۳۶۰   → مبنای «برنامه‌ریزی اولیه»: کدام درس، تقاضای مورد انتظار،
+  * مدیریار۳۶۰   → مبنای «برنامه‌ریزی اولیه»: کدام درس، تقاضای مورد انتظار،
                   ظرفیت و تعداد گروه پیشنهادی و استاد پیشنهادی (سرویس‌های تحلیلی)
   * برنامه‌یار۳۶۰ → مبنای «خود برنامه‌ریزی»: چینش واقعی کلاس‌ها، اتاق‌ها، اساتید و ترم
 
-این ماژول برنامه‌ریزی اولیهٔ نیم‌سال بعد را از پایگاه دادهٔ دانشجو۳۶۰ می‌سازد،
+این ماژول برنامه‌ریزی اولیهٔ نیم‌سال بعد را از پایگاه دادهٔ مدیریار۳۶۰ می‌سازد،
 با کاتالوگ واقعی برنامه‌یار۳۶۰ تطبیق می‌دهد و در صورت اجازهٔ مدیر، به‌صورت
 «پیشنهاد دروس» در برنامه‌یار۳۶۰ ثبت می‌کند (POST /api/proposals/).
 """
@@ -36,7 +36,7 @@ def normalize_title(title: str | None) -> str:
 
 
 def next_term(latest: Term) -> tuple[str, str]:
-    """نیم‌سال بعدی از الگوی کد ترم‌های دانشجو۳۶۰ (نمونه: 1403-2 → 1404-1)"""
+    """نیم‌سال بعدی از الگوی کد ترم‌های مدیریار۳۶۰ (نمونه: 1403-2 → 1404-1)"""
     try:
         year, no = latest.code.split("-")
         no = int(no)
@@ -50,7 +50,7 @@ def next_term(latest: Term) -> tuple[str, str]:
 
 
 def build_initial_plan(db: Session, *, lookback_terms: int = 3) -> dict:
-    """ساخت برنامه‌ریزی اولیهٔ نیم‌سال بعد بر پایهٔ تحلیل‌های دانشجو۳۶۰
+    """ساخت برنامه‌ریزی اولیهٔ نیم‌سال بعد بر پایهٔ تحلیل‌های مدیریار۳۶۰
 
     برای هر درس فعال با سابقهٔ ارائه:
       * تقاضای مورد انتظار = میانگین (ثبت‌نام + محرومیت) در ۳ نیم‌سال اخیر
@@ -60,7 +60,7 @@ def build_initial_plan(db: Session, *, lookback_terms: int = 3) -> dict:
     """
     terms = sorted(db.query(Term).all(), key=lambda t: t.order_index)
     if not terms:
-        return {"ready": False, "reason": "پایگاه دادهٔ دانشجو۳۶۰ هنوز ترمی ندارد."}
+        return {"ready": False, "reason": "پایگاه دادهٔ مدیریار۳۶۰ هنوز ترمی ندارد."}
     latest = terms[-1]
     next_code, next_label = next_term(latest)
     recent = terms[-lookback_terms:]
@@ -124,7 +124,7 @@ def build_initial_plan(db: Session, *, lookback_terms: int = 3) -> dict:
     return {
         "ready": True,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source_system": "دانشجو۳۶۰ — مبنای برنامه‌ریزی اولیه",
+        "source_system": "مدیریار۳۶۰ — مبنای برنامه‌ریزی اولیه",
         "target_system": "برنامه‌یار۳۶۰ — مبنای برنامه‌ریزی اجرایی",
         "term": {"code": next_code, "label": next_label},
         "basis": {
@@ -190,7 +190,7 @@ def push_initial_plan(db: Session) -> dict:
     term_label = plan["term"]["label"]
 
     basket = shared_client.post_json("/api/baskets/", {
-        "title": f"برنامه‌ریزی اولیه از دانشجو۳۶۰ — {term_label}",
+        "title": f"برنامه‌ریزی اولیه از مدیریار۳۶۰ — {term_label}",
         "semester": semester,
         "year": year,
     })
@@ -206,7 +206,7 @@ def push_initial_plan(db: Session) -> dict:
             "course_name": m["course_title"],
             "unique_code": str(m["remote_unique_code"]),
             "units": m.get("credits"),
-            "course_type": "برنامه‌ریزی اولیه دانشجو۳۶۰",
+            "course_type": "برنامه‌ریزی اولیه مدیریار۳۶۰",
             "estimated_capacity": m.get("suggested_capacity_per_section"),
             "required_classes": m.get("suggested_sections"),
             "from_manager": True,

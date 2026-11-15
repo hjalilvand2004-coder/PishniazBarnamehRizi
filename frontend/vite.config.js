@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// فرانت مستقل دانشجو۳۶۰ — کامپوننت‌ها در src/app
+// فرانت مستقل مدیریار۳۶۰ — کامپوننت‌ها در src/app
 // خروجی build به backend/static می‌رود تا FastAPI هر دو را از یک مبدأ سرو کند
 export default defineConfig({
   plugins: [react()],

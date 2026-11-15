@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""سامانه دانشجو۳۶۰ — بک‌اند FastAPI سند معرفی خدمات مدیریت آموزشی دانشگاه
+"""سامانه مدیریار۳۶۰ — بک‌اند FastAPI سند معرفی خدمات مدیریت آموزشی دانشگاه
 
 منبع داده: backend/app/data (تک‌منبع حقیقت محتوا)
 اجرا:  uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -43,7 +43,7 @@ from .data.services import SERVICES, get_service, get_services
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 STATIC_DIR = BASE_DIR / "static"
 
-APP_VERSION = "2.5.2"
+APP_VERSION = "2.6.0"
 
 
 @asynccontextmanager
@@ -51,7 +51,7 @@ async def lifespan(_app: FastAPI):
     # ایجاد جداول و بارگذاری خودکار داده نمونه در نخستین اجرا
     seeded = init_db()
     if seeded:
-        print("دانشجو۳۶۰: پایگاه داده ایجاد و داده نمونه بارگذاری شد.")
+        print("مدیریار۳۶۰: پایگاه داده ایجاد و داده نمونه بارگذاری شد.")
     # حساب‌های نمایشی سه نقش (ادمین سیستم، مدیرگروه، مدیرآموزش)
     db = SessionLocal()
     try:
@@ -66,7 +66,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="دانشجو۳۶۰ — API سرویس‌های مدیریت آموزشی دانشگاه",
+    title="مدیریار۳۶۰ — API سرویس‌های مدیریت آموزشی دانشگاه",
     description="بک‌اند FastAPI با پایگاه داده SQLAlchemy: سند رسمی خدمات + موتور تحلیلی ۱۱ سرویس مدیریت آموزشی",
     version=APP_VERSION,
     lifespan=lifespan,

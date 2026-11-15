@@ -11,13 +11,14 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from ..models import Course, Instructor, Offering
+from ..models import Course, Instructor, Offering, Term
 from . import config
 from .models import ByInstructor, ByRoom, ByScheduleHistory, BySyncLog, ByTermCourse
 
 STALE_HOURS = 48          # بیشتر از این فاصله = داده کهنه
 CAP_MAX_REALISTIC = 200   # ظرفیت بیش از این در یک گروه کلاس غیرواقعی فرض می‌شود
 MAX_UNITS = 8             # بیشینهٔ واحد معتبر درس
+DETAIL_LIMIT = 200        # سقف ردیف‌های جزئیات هر چک (تعداد کامل در items_total اعلام می‌شود)
 
 SEV_FA = {"good": "سالم", "info": "اطلاع", "warn": "هشدار", "bad": "بحرانی"}
 
@@ -30,6 +31,13 @@ def _sev(n: int, warn_from: int, bad_from: int) -> str:
     if n >= warn_from:
         return "warn"
     return "info"
+
+
+def _cap(items: list[dict]) -> tuple[list[dict], int]:
+    """سقف‌گذاری فهرست موارد — خروجی: (موارد نمایش‌داده‌شده، تعداد کامل؛ ۰ یعنی بدون برش)"""
+    if len(items) <= DETAIL_LIMIT:
+        return items, 0
+    return items[:DETAIL_LIMIT], len(items)
 
 
 def build_quality_report(db: Session) -> dict:
@@ -65,31 +73,45 @@ def build_quality_report(db: Session) -> dict:
     # ---------- ۲) کیفیت دروس مبنای داده
     courses = db.query(Course).all()
     code_fallback = [c for c in courses if c.code.startswith("BY")]
-    seen_codes: dict[str, int] = {}
+    code_groups: dict[str, list[str]] = {}
     for c in courses:
-        seen_codes[c.code] = seen_codes.get(c.code, 0) + 1
-    dup_codes = sum(1 for v in seen_codes.values() if v > 1)
+        code_groups.setdefault(c.code, []).append(c.title)
+    dup_map = {k: v for k, v in code_groups.items() if len(v) > 1}
+    dup_codes = len(dup_map)
     bad_units = [c for c in courses if not c.credits or c.credits <= 0 or c.credits > MAX_UNITS]
     course_score = max(0, 20 - min(8, len(code_fallback) * 8 / max(1, len(courses)) * 8) - dup_codes * 2 - min(4, len(bad_units)))
 
     # ---------- ۳) کیفیت اساتید (آینه + مبنای داده)
     instr = db.query(Instructor).all()
     mirror_instr = db.query(ByInstructor).all()
-    no_code_mirror = sum(1 for i in mirror_instr if not i.code)
+    no_code_rows = [i for i in mirror_instr if not i.code]
+    no_code_mirror = len(no_code_rows)
     names_seen: dict[str, int] = {}
     for i in instr:
         names_seen[i.name] = names_seen.get(i.name, 0) + 1
-    dup_names = sum(1 for n, v in names_seen.items() if v > 1 and n != "بدون استاد مشخص")
-    zero_cap = sum(1 for i in instr if not i.max_weekly_hours)
+    dup_names_map = {n: v for n, v in names_seen.items() if v > 1 and n != "بدون استاد مشخص"}
+    dup_names = len(dup_names_map)
+    zero_cap_rows = [i for i in instr if not i.max_weekly_hours]
+    zero_cap = len(zero_cap_rows)
     instr_score = max(0, 15 - min(5, no_code_mirror) - min(4, dup_names) - min(3, zero_cap))
 
     # ---------- ۴) کیفیت گروه‌های کلاس (ارائه‌ها)
     offs = db.query(Offering).all()
+    course_by_id = {c.id: c for c in courses}
+    term_label = {t.id: t.label for t in db.query(Term).all()}
     unknown_ids = {i.id for i in db.query(Instructor).filter(Instructor.name == "بدون استاد مشخص").all()}
-    unknown_inst = sum(1 for o in offs if o.instructor_id in unknown_ids)
-    zero_cap_offs = sum(1 for o in offs if o.capacity <= 0)
-    big_cap = sum(1 for o in offs if o.capacity > CAP_MAX_REALISTIC)
-    unscheduled_rows = db.query(ByScheduleHistory).filter(ByScheduleHistory.day.is_(None)).count()
+    unknown_rows = [o for o in offs if o.instructor_id in unknown_ids]
+    unknown_inst = len(unknown_rows)
+    zero_cap_off_rows = [o for o in offs if o.capacity <= 0]
+    zero_cap_offs = len(zero_cap_off_rows)
+    big_cap_rows = [o for o in offs if o.capacity > CAP_MAX_REALISTIC]
+    big_cap = len(big_cap_rows)
+    unsched_rows = db.query(ByScheduleHistory).filter(ByScheduleHistory.day.is_(None)).all()
+    unscheduled_rows = len(unsched_rows)
+    unsched_groups: dict[str, int] = {}
+    for r in unsched_rows:
+        key = r.ref_unique_course_title or r.course_name
+        unsched_groups[key] = unsched_groups.get(key, 0) + 1
     offer_score = max(0, 25 - min(8, zero_cap_offs * 8 / max(1, len(offs)) * 8) - min(5, unknown_inst) - min(4, big_cap) - min(5, unscheduled_rows * 5 / max(1, db.query(ByScheduleHistory).count()) * 5))
 
     # ---------- ۵) کامل‌بودن مبدأ (فیلدهای غایبِ ذات منبع)
@@ -130,6 +152,72 @@ def build_quality_report(db: Session) -> dict:
     if missing:
         checks.append({"key": "src-missing", "label": "فیلدهای ذاتاً غایب در منبع برنامه‌یار۳۶۰", "value": len(missing),
                        "severity": "info", "hint": "؛ ".join(missing) + " — تا ثبت در مبدأ، سرویس‌های وابسته محدودیت را صریح اعلام می‌کنند و عدد ساختگی تولید نمی‌شود."})
+
+    # ---------- فهرست جزئیات هر چک — موارد دقیقِ تعارض برای مسئول داده
+    def _off_item(o: Offering, info: str, note: str) -> dict:
+        crs = course_by_id.get(o.course_id)
+        return {"code": f"گروه #{o.id}",
+                "title": (f"{crs.code} — {crs.title}" if crs else f"درس #{o.course_id}"),
+                "info": info, "note": note}
+
+    item_lists: dict[str, list[dict]] = {
+        "course-no-code": [
+            {"code": c.code, "title": c.title, "info": f"{c.credits} واحد",
+             "note": "کد موقت BY — کد یکتای رسمی در مبدأ ثبت نشده"}
+            for c in code_fallback
+        ],
+        "course-dup-code": [
+            {"code": k, "title": "؛ ".join(v), "info": f"{len(v)} عنوان",
+             "note": "یک کد یکتا بین چند عنوان درس مشترک است"}
+            for k, v in sorted(dup_map.items())
+        ],
+        "course-bad-units": [
+            {"code": c.code, "title": c.title, "info": f"واحد {c.credits}",
+             "note": f"واحد باید بین ۱ تا {MAX_UNITS} باشد"}
+            for c in bad_units
+        ],
+        "instr-no-code": [
+            {"code": f"#{i.external_id}", "title": i.name, "info": i.cooperation_type or "—",
+             "note": "کد استاد در مبدأ خالی است"}
+            for i in no_code_rows
+        ],
+        "instr-dup-name": [
+            {"code": "—", "title": n, "info": f"{v} رکورد",
+             "note": "نام تکراری — دو نفر متمایز یا یک نفر دوبار ثبت شده"}
+            for n, v in sorted(dup_names_map.items())
+        ],
+        "instr-zero-cap": [
+            {"code": "—", "title": i.name, "info": "سقف ۰ ساعت",
+             "note": "سقف واحد تدریس هفتگی ثبت نشده"}
+            for i in zero_cap_rows
+        ],
+        "off-unknown-inst": [
+            _off_item(o, term_label.get(o.term_id, f"ترم {o.term_id}"),
+                      "استادِ گروه کد معتبری در فهرست اساتید مبدأ ندارد")
+            for o in unknown_rows
+        ],
+        "off-zero-cap": [
+            _off_item(o, "ظرفیت ۰", "ظرفیت گروه باید در برنامه‌یار۳۶۰ ثبت شود")
+            for o in zero_cap_off_rows
+        ],
+        "off-big-cap": [
+            _off_item(o, f"ظرفیت {o.capacity}", f"بیش از {CAP_MAX_REALISTIC} — در مبدأ بازبینی شود")
+            for o in big_cap_rows
+        ],
+        "off-unscheduled": [
+            {"code": "—", "title": k, "info": f"{v} رکورد",
+             "note": "سوابق بدون روز/ساعت — برنامه‌ریزی درس‌محور"}
+            for k, v in sorted(unsched_groups.items(), key=lambda kv: -kv[1])
+        ],
+        "src-missing": [
+            {"code": "—", "title": m, "info": "—", "note": "فیلد غایب در منبع برنامه‌یار۳۶۰"}
+            for m in missing
+        ],
+    }
+    for ch in checks:
+        shown, total = _cap(item_lists.get(ch["key"], []))
+        ch["items"] = shown
+        ch["items_total"] = total
 
     recommendations = []
     for f in freshness:
@@ -176,5 +264,5 @@ def build_quality_report(db: Session) -> dict:
         "checks": checks,
         "recommendations": recommendations,
         "basis": basis,
-        "note": "کیفیت داده = سلامت دادهٔ همگام‌شدهٔ برنامه‌یار۳۶۰ و دیتای مبنا؛ توصیه‌ها برای مسئول داده در مبدأ و ادمین سامانه قابل اجراست.",
+        "note": "کیفیت داده = سلامت دادهٔ همگام‌شدهٔ برنامه‌یار۳۶۰ و دیتای مبنا؛ برای هر چک، فهرست کامل موارد تعارض با «نمایش موارد» قابل مشاهده و خروجی CSV دارد.",
     }

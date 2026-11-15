@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# بازکردن پورت ۸۰۸۷/TCP روی سرور میزبان سامانهٔ دانشجو۳۶۰ (188.212.96.235)
+# بازکردن پورت ۸۰۸۷/TCP روی سرور میزبان سامانهٔ مدیریار۳۶۰ (188.212.96.235)
 # با root یا sudo اجرا شود:  sudo bash scripts/open-port-8087-linux.sh
 # بسته به فایروال فعال، یکی از بخش‌های firewalld / ufw / iptables عمل می‌کند.
 set -e
@@ -41,6 +41,6 @@ if ss -tln 2>/dev/null | grep -q ":${PORT} "; then
     echo "✓ سرویسی روی پورت $PORT در حال گوش‌دادن است."
 else
     echo "! هنوز هیچ سرویسی روی پورت $PORT گوش نمی‌دهد — سامانه را اجرا کنید:"
-    echo "    bash scripts/start.sh        (یا پرتیبل: RUN-Daneshjo360.bat)"
+    echo "    bash scripts/start.sh        (یا پرتیبل: RUN-ModirYar360.bat)"
     echo "  مستند کامل: docs/Deploy-8087-FA.md"
 fi

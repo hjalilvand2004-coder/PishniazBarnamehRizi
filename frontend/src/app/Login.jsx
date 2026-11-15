@@ -1,4 +1,4 @@
-// صفحه ورود سامانه دانشجو۳۶۰ — ورود یکپارچه سازمانی (SSO) + ورود نمایشی برای ارزیابی
+// صفحه ورود سامانه مدیریار۳۶۰ — ورود یکپارچه سازمانی (SSO) + ورود نمایشی برای ارزیابی
 import { useState } from "react";
 import { ERROR_TEXTS, useAuth } from "./auth.jsx";
 import { toFa } from "./ui.jsx";
@@ -58,7 +58,7 @@ function Flash({ flash }) {
       <div className="lg-alert lg-alert-noaccess" role="alert">
         <b>دسترسی به این سامانه ندارید</b>
         <p>
-          حساب سازمانی شما شناسایی شد اما نقش دسترسی به «دانشجو۳۶۰» برای شما ثبت نشده است.
+          حساب سازمانی شما شناسایی شد اما نقش دسترسی به «مدیریار۳۶۰» برای شما ثبت نشده است.
           برای فعال‌سازی دسترسی، از مدیر سامانه بخواهید نقش <code>daneshjo.access</code> را
           در پنل مدیریت کاربرانِ مرکز احراز هویت به شما تخصیص دهد.
         </p>
@@ -122,7 +122,7 @@ export default function Login() {
         {/* کارت ورود */}
         <main className="lg-card" aria-label="صفحه ورود سامانه">
           <div className="lg-logo" aria-hidden="true">۳۶۰</div>
-          <h1 className="lg-title">دانشجو۳۶۰</h1>
+          <h1 className="lg-title">مدیریار۳۶۰</h1>
           <p className="lg-subtitle">
             سامانه هوشمند تحلیل و پشتیبانی تصمیم در برنامه‌ریزی آموزشی دانشگاه
           </p>

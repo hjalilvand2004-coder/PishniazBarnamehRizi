@@ -1,4 +1,4 @@
-# استقرار سامانهٔ دانشجو۳۶۰ روی `http://188.212.96.235:8087/`
+# استقرار سامانهٔ مدیریار۳۶۰ روی `http://188.212.96.235:8087/`
 
 **هدف:** بالا آمدن سامانه روی پورت ۸۰۸۷ همان میزبانی که پرتال SSO (پورت ۸۰۸۶)، درسیار۳۶۰ (۸۰۸۲) و برنامه‌یار۳۶۰ (۸۰۸۳) روی آن فعال‌اند.
 
@@ -10,7 +10,7 @@
 
 | مورد | مقدار جدید |
 |---|---|
-| اجرای سامانه | `uvicorn app.main:app --host 0.0.0.0 --port 8087` — در `scripts/start.sh`، `scripts/start.bat` و پرتیبل (`RUN-Daneshjo360.bat`) |
+| اجرای سامانه | `uvicorn app.main:app --host 0.0.0.0 --port 8087` — در `scripts/start.sh`، `scripts/start.bat` و پرتیبل (`RUN-ModirYar360.bat`) |
 | مبدأ عمومی پیش‌فرض | `DANESHJO360_PUBLIC_ORIGIN` = `http://188.212.96.235:8087` — در `backend/app/auth/config.py` |
 | redirect_uri پیش‌فرض | `http://188.212.96.235:8087/auth/sso/callback` (مشتق از PUBLIC_ORIGIN) |
 | post_logout پیش‌فرض | `http://188.212.96.235:8087/login?logout=1` |
@@ -40,7 +40,7 @@ sudo iptables -A INPUT -p tcp --dport 8087 -j ACCEPT
 
 ### سرور ویندوز
 ```bat
-netsh advfirewall firewall add rule name="Daneshjo360-8087" dir=in action=allow protocol=TCP localport=8087
+netsh advfirewall firewall add rule name="ModirYar360-8087" dir=in action=allow protocol=TCP localport=8087
 ```
 
 ### گروه امنیتی ابری (حیاتی)
@@ -61,7 +61,7 @@ bash scripts/start.sh          # نصب وابستگی‌ها + اجرا روی 
 فایل `/etc/systemd/system/daneshjo360.service`:
 ```ini
 [Unit]
-Description=Daneshjo360 (Samane Modiriat Amoozeshi) - port 8087
+Description=ModirYar360 (Samane Modiriat Amoozeshi) - port 8087
 After=network.target
 
 [Service]
@@ -81,7 +81,7 @@ sudo systemctl enable --now daneshjo360
 ```
 
 ### پرتیبل ویندوز
-`Daneshjo360-Portable-Windows.zip` را روی سرور باز کنید و `RUN-Daneshjo360.bat` را اجرا کنید — اکنون روی `0.0.0.0:8087` بالا می‌آید (در راهنمای داخل بسته هم توضیح داده شده).
+`ModirYar360-Portable-Windows.zip` را روی سرور باز کنید و `RUN-ModirYar360.bat` را اجرا کنید — اکنون روی `0.0.0.0:8087` بالا می‌آید (در راهنمای داخل بسته هم توضیح داده شده).
 
 ## ۴) بررسی صحت
 

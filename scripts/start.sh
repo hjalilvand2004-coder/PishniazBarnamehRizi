@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# راه‌اندازی سریع سامانه دانشجو۳۶۰ — بک‌اند FastAPI + فرانت آماده (backend/static)
+# راه‌اندازی سریع سامانه مدیریار۳۶۰ — بک‌اند FastAPI + فرانت آماده (backend/static)
 set -e
 cd "$(dirname "$0")/../backend"
 

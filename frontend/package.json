@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "فرانت‌اند React سند معرفی خدمات مدیریت آموزشی دانشگاه — سامانه دانشجو۳۶۰",
+  "description": "فرانت‌اند React سند معرفی خدمات مدیریت آموزشی دانشگاه — سامانه مدیریار۳۶۰",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
