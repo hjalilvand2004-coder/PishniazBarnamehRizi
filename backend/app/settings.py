@@ -35,6 +35,7 @@ _ORIG = {
     "sso_redirect_uri": auth_config.SSO_REDIRECT_URI,
     "sso_post_logout_uri": auth_config.SSO_POST_LOGOUT_URI,
     "sso_client_id": auth_config.CLIENT_ID,
+    "sso_app_key": auth_config.APP_KEY,
 }
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -121,8 +122,9 @@ def apply_saved_settings(db: Session) -> None:
     for key, attr in (("sso_issuer", "SSO_ISSUER"), ("sso_redirect_uri", "SSO_REDIRECT_URI"),
                       ("sso_post_logout_uri", "SSO_POST_LOGOUT_URI"), ("sso_client_id", "CLIENT_ID")):
         setattr(auth_config, attr, overrides.get(key, _ORIG[key]))
-    # پیشوند نقش‌ها طبق راهنمای اتصال v1.0 = client_id (مگر env صریحاً جدا کرده باشد)
-    auth_config.APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY") or auth_config.CLIENT_ID
+    # appKey سامانه در کاتالوگ SSO («modiriyar») می‌تواند از client_id جدا باشد
+    # (نمونهٔ واقعی: client_id=modiriyar360)؛ فقط env صریح آن را بازنویسی می‌کند.
+    auth_config.APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY") or _ORIG["sso_app_key"]
     auth_config.ACCESS_ROLE = f"{auth_config.APP_KEY}.access"
     # کش سند Discovery باید برای issuer جدید بازخوانی شود
     auth_security._DISCOVERY_CACHE["doc"] = None

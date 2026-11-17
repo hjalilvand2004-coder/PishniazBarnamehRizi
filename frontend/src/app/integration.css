@@ -323,3 +323,44 @@
 .by-plan-code { font-size: 12px; color: var(--dj2-muted, #64748b); }
 .by-plan-basis { font-size: 11.5px; color: var(--dj2-muted, #64748b); margin-top: 4px; }
 .by-plan-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ==========================================================================
+   لایهٔ ارتقای کیفیت بصری — هماهنگ با سیستم طراحی داشبورد (گلس، گرادیان، عمق)
+   ========================================================================== */
+
+.by-root { font-family: "Vazirmatn", "Segoe UI", Tahoma, Arial, sans-serif; }
+
+.by-root:not(.by-root-embedded) {
+  background:
+    radial-gradient(1100px 620px at 88% -8%, rgba(14, 107, 99, 0.09), transparent 62%),
+    radial-gradient(900px 560px at 6% 104%, rgba(28, 90, 150, 0.08), transparent 58%),
+    linear-gradient(180deg, #f4f8fb 0%, #eef4f8 100%);
+  background-attachment: fixed;
+}
+
+.by-card {
+  position: relative;
+  border-radius: 16px;
+  box-shadow: var(--dj2-shadow-sm, 0 1px 2px rgba(13, 42, 64, 0.05), 0 6px 18px -10px rgba(13, 42, 64, 0.14));
+}
+
+.by-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, rgba(14, 107, 99, 0.55), rgba(28, 90, 150, 0.4), transparent 65%);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.by-btn {
+  background: var(--dj2-grad-btn, linear-gradient(125deg, #0e6b63 0%, #12826f 48%, #1c5a96 115%));
+  box-shadow: 0 8px 18px -8px rgba(14, 107, 99, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.by-btn:hover { transform: translateY(-1px); filter: brightness(1.07); }
+.by-btn:disabled { transform: none; box-shadow: none; }
+
+.by-table-wrap { border-radius: 13px; }

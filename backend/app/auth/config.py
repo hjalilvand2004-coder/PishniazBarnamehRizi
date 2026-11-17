@@ -10,11 +10,13 @@ import os
 SSO_ISSUER = os.getenv("DANESHJO360_SSO_ISSUER", "http://188.212.96.235:8086")
 
 # --- شناسه‌های این سامانه در کاتالوگ SSO --------------------------------------
-CLIENT_ID = os.getenv("DANESHJO360_SSO_CLIENT_ID", "daneshjo360")    # کلاینت public — باید با ثبت پرتال یکی باشد
+# طبق «مدیریت سامانه‌ها» در دانشجویار۳۶۰: کلید سامانه (appKey)=modiriyar و
+# Client ID در SSO=modiriyar360 — باید کاراکتر به کاراکتر با ثبت پرتال یکی باشد.
+CLIENT_ID = os.getenv("DANESHJO360_SSO_CLIENT_ID", "modiriyar360")   # کلاینت public — باید با ثبت پرتال یکی باشد
 # پیشوند نقش‌های توکن طبق «راهنمای اتصال سامانه‌ها به ورود یکپارچهٔ دانشجویار۳۶۰» v1.0:
 # نقش‌ها در resource_access.<client_id>.roles به شکل «<client_id>.<نقش» می‌آیند؛
-# پس پیش‌فرض app_key همان client_id است (env می‌تواند آن را جدا کند).
-APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY") or CLIENT_ID
+# appKey این سامانه «modiriyar» است (نقش ورود: modiriyar.access).
+APP_KEY = os.getenv("DANESHJO360_SSO_APP_KEY", "modiriyar")
 APP_NAME = "مدیریار۳۶۰"
 
 # مبدأ عمومی استقرار سامانه — پیش‌فرض: همان میزبان پرتال با پورت ۸۰۸۷

@@ -353,3 +353,98 @@
   0%, 100% { transform: scale(1); opacity: 0.92; }
   50% { transform: scale(1.06); opacity: 1; }
 }
+
+/* ==========================================================================
+   لایهٔ ارتقای کیفیت بصری — عمق بیشتر، حرکت نرم، جزئیات پریمیوم
+   ========================================================================== */
+
+/* شناوری نرم اوربیت‌های پس‌زمینه */
+.lg-orb-a { animation: lg-drift-a 16s ease-in-out infinite alternate; }
+.lg-orb-b { animation: lg-drift-b 19s ease-in-out infinite alternate; }
+.lg-orb-c { animation: lg-drift-c 22s ease-in-out infinite alternate; }
+
+@keyframes lg-drift-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(-46px, 34px) scale(1.08); }
+}
+@keyframes lg-drift-b {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(38px, -30px) scale(1.1); }
+}
+@keyframes lg-drift-c {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(-24px, -36px) scale(1.15); }
+}
+
+/* درخشش خط عمودی روی کارت ورود + هالهٔ رنگی پشت کارت */
+.lg-card { position: relative; overflow: hidden; }
+.lg-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(111, 220, 199, 0.75), rgba(120, 180, 240, 0.6), transparent);
+  pointer-events: none;
+}
+.lg-card::after {
+  content: "";
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 160, 133, 0.16), transparent 68%);
+  pointer-events: none;
+}
+
+/* موج درخشش روی دکمهٔ SSO هنگام هاور */
+.lg-sso-btn { position: relative; overflow: hidden; }
+.lg-sso-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -80%;
+  width: 55%;
+  transform: skewX(-22deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transition: right 0.55s ease;
+  pointer-events: none;
+}
+.lg-sso-btn:hover::after { right: 120%; }
+
+/* عمق بیشتر برای تیتر معرفی */
+.lg-hero-title { filter: drop-shadow(0 6px 24px rgba(111, 220, 199, 0.18)); }
+
+/* حلقهٔ نور اطراف لوگوی کارت */
+.lg-logo { position: relative; }
+.lg-logo::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 26px;
+  border: 1px solid rgba(111, 220, 199, 0.35);
+  pointer-events: none;
+}
+
+/* کارت‌های نقش: خط نشانگر شیشه‌ای سمت راست */
+.lg-role { position: relative; overflow: hidden; }
+.lg-role::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 18%;
+  height: 64%;
+  width: 2.5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #6fdcc7, rgba(28, 90, 150, 0.7));
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.lg-role:hover::before { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-orb-a, .lg-orb-b, .lg-orb-c, .lg-splash-logo { animation: none !important; }
+  .lg-sso-btn::after { display: none; }
+}
